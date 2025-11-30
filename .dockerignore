@@ -1,0 +1,13 @@
+pipe/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+.vscode/
+.git/
+.gitignore
+notebooks/
+output.txt
+python310.exe
+*.egg-info
