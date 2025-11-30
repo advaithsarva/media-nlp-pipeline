@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual Environment
+pipe/
+venv/
+.env/
+
+# VS Code
+.vscode/
+
+# Logs
+logs/
+*.log
+
+# Byte-compiled
+*.so
+*.dll
+
+# Airflow
+airflow/
+airflow_logs/
+
+# Docker
+*.pid
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Build / Packaging
+build/
+dist/
+*.egg-info/
+
+# OS files
+Thumbs.db
+.DS_Store
