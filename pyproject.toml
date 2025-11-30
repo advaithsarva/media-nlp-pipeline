@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "media-nlp-pipeline"
+version = "0.1.0"
+description = "Deterministic NLP pipeline with taxonomy classification and scoring"
+authors = [
+    { name="Advaith Narayana Sarva" }
+]
+readme = "README.md"
+requires-python = ">=3.10"
+
+dependencies = [
+    "pydantic>=2.0",
+    "pyyaml>=6.0",
+    "regex",
+    "numpy",
+    "scikit-learn",
+    "spacy>=3.8",
+    "nltk",
+    "fastapi",
+    "uvicorn",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "black",
+    "flake8",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
