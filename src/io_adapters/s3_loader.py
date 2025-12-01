@@ -1,1 +1,0 @@
-'''For loading / saving documents to S3-like storage (or MinIO locally). Useful and not too complex.'''
