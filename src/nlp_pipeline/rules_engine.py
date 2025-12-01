@@ -1,1 +1,3 @@
 # Rule-based taxonomy mapping: spaCy patterns, keyword rules, regex-driven classification.
+class RuleEngine:
+    pass

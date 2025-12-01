@@ -1,1 +1,3 @@
 # Feature engineering: n-grams, TF-IDF, other signals used by rules/ML.
+class FeatureExtractor:
+    pass

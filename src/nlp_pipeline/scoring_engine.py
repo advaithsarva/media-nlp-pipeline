@@ -1,1 +1,3 @@
 # Reads scoring_v1.yaml and computes final scores from the classification outputs.
+class ScoringEngine:
+    pass
