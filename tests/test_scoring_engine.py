@@ -1,0 +1,1 @@
+#  Validates that scoring matches scoring_v1.yaml.

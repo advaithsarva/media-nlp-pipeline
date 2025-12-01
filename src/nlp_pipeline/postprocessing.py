@@ -1,1 +1,1 @@
-# JSON building, span offsets, etc.
+# Builds final output JSON, attaches spans/offsets, enforces output_schema.json.

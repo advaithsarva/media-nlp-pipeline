@@ -1,1 +1,1 @@
-# cleaning, normalization
+#All text cleaning + normalization: lowercase, Unicode, HTML strip, etc.

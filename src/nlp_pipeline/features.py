@@ -1,1 +1,1 @@
-# embeddings, n-grams, etc.
+# Feature engineering: n-grams, TF-IDF, other signals used by rules/ML.

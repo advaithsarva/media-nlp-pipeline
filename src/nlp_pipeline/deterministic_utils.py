@@ -1,1 +1,1 @@
-# seeds, hashing, version stamping
+'''Seeds, hashing, version stamping; ensures same input → same output (deterministic pipeline).'''

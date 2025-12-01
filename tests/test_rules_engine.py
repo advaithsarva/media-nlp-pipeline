@@ -1,0 +1,1 @@
+# Tests your rule-based category mapping.

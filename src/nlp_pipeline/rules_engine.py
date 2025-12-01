@@ -1,1 +1,1 @@
-# rule-based taxonomy mapping
+# Rule-based taxonomy mapping: spaCy patterns, keyword rules, regex-driven classification.

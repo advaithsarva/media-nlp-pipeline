@@ -1,0 +1,1 @@
+#Ensures every API output matches output_schema.json contract.

@@ -1,1 +1,1 @@
-# graph/ontology utilities
+# Graph representation of taxonomy: parents, children, relationships, maybe synonyms.

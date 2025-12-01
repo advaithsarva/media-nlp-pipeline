@@ -1,1 +1,1 @@
-# sentence splitting
+#Sentence splitting logic. Might use spaCy, regex, pysbd, etc.
