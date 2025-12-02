@@ -1,13 +1,15 @@
-class ESClient:
-    def receive(hit_dict):
-        pass
-    def fetch(query_config):
-        pass
+import requests
 class APIClient:
     def receive(json_payload):
         pass
     def fetch(request_config):
         pass
+class ESClient:
+    def receive(hit_dict):
+        pass
+    def fetch(query_config):
+        pass
+
 class S3Client:
     def receive(s3_event):
         pass
