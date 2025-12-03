@@ -1,4 +1,4 @@
-class Parquewriter:
+class ParquetWriter:
     def write(document):
         pass
     def save_batch(documents):

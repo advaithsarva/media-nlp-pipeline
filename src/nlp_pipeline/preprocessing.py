@@ -1,3 +1,4 @@
 #All text cleaning + normalization: lowercase, Unicode, HTML strip, etc.
 class TextProcessor:
-    pass
+    def __init__(self,lang_config,normalization_config):
+        pass

@@ -1,3 +1,6 @@
 #Sentence splitting logic. Might use spaCy, regex, pysbd, etc.
 class SentenceSegmenter:
-    pass
+    def __init__(self,segmentation_config):
+        pass
+    def segment(normalized_doc):
+        pass
