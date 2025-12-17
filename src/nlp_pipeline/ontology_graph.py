@@ -1,6 +1,9 @@
 # Graph representation of taxonomy: parents, children, relationships, maybe synonyms.
+from typing import Dict, Any, List, Set
+import networkx as nx
+
 class OntologyGraph:
-    def __init__(self,taxonomy_config):
+    def __init__(self,taxonomy_config:Dict[str,Any]):
         pass
     def get_ancestors(node_id):
         pass

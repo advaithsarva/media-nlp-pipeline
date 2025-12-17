@@ -1,0 +1,188 @@
+pipeline:
+  name: "nlp_pipeline_v1"
+  version: "1.0.0"
+  description: "NLP text processing and classification pipeline"
+  language: "en"
+  enable_ml_classifier: true
+  enable_embeddings: true
+  enable_vector_index: true
+  
+  # Pipeline stages to execute (in order)
+  stages:
+    - "input"
+    - "preprocessing"
+    - "feature_extraction"
+    - "ml_classification"
+    - "embeddings"
+    - "postprocessing"
+    - "output"
+  seed: #idk
+input:
+  mode: "pull"  # Options: "pull" or "push"
+  
+  sources:
+    files:
+      enabled: true
+      types:
+        - "pdf"
+        - "json"
+        - "csv"
+        - "txt"
+        - "docx"
+        - "pptx"
+      path: "data/raw"
+      glob_pattern: "*.txt"  # File pattern to match
+      
+      # CSV-specific configuration
+      csv:
+        text_column: "content"  # Which column contains the text to process
+        encoding: "utf-8"
+        delimiter: ","
+        skip_rows: 0
+      
+      # JSON-specific configuration
+      json:
+        text_field: "content"  # Which field contains the text
+      
+      # PDF-specific configuration
+      pdf:
+        extract_images: false
+        page_range: null  # e.g., [1, 10] for pages 1-10
+    
+    api:
+      enabled: false
+      endpoint: "https://api.example.com/documents"
+      method: "GET"
+      headers:
+        Authorization: "Bearer ${API_KEY}"
+      timeout: 30
+      batch_size: 100
+    
+    es:
+      enabled: false
+      host: "localhost"
+      port: 9200
+      index: "documents"
+      query:
+        match_all: {}
+      text_field: "content"
+    
+    kafka:
+      enabled: false
+      bootstrap_servers: "localhost:9092"
+      topic: "nlp-input"
+      group_id: "nlp-pipeline"
+      auto_offset_reset: "earliest"
+      text_field: "message"
+    
+    s3:
+      enabled: false
+      bucket: "nlp-data"
+      prefix: "raw/"
+      region: "us-east-1"
+      access_key: "${AWS_ACCESS_KEY}"
+      secret_key: "${AWS_SECRET_KEY}"
+    
+    scrap:
+      enabled: false
+      urls:
+        - "https://example.com/articles"
+      css_selector: ".article-content"
+      rate_limit: 1  # requests per second
+      user_agent: "NLP-Pipeline/1.0"
+    
+    redis:
+      enabled: false
+      host: "localhost"
+      port: 6379
+      db: 0
+      key_pattern: "nlp:input:*"
+      text_field: "content"
+
+# Output configuration
+output:
+  type: "parquet"  # Options: "jsonl", "json", "csv", "parquet", "redis", "kafka", "s3"
+  path: "data/processed/"
+  
+  # Format-specific configurations
+  parquet:
+    compression: "snappy"  # Options: "snappy", "gzip", "brotli", "none"
+    row_group_size: 10000
+  
+  jsonl:
+    encoding: "utf-8"
+    append: false
+  
+  redis:
+    host: "localhost"
+    port: 6379
+    db: 0
+    key_prefix: "nlp:output:"
+    ttl: 86400  # Time to live in seconds (24 hours)
+  
+  kafka:
+    bootstrap_servers: "localhost:9092"
+    topic: "nlp-output"
+  
+  s3:
+    bucket: "nlp-results"
+    prefix: "processed/"
+    region: "us-east-1"
+
+# Feature extraction configuration
+feature_extraction:
+  use_ngrams: true
+  max_ngram: 3
+  min_ngram: 1
+  use_pos_tags: false
+  use_ner: false  # Named Entity Recognition
+  use_sentiment: false
+  use_keywords: true
+  max_keywords: 10
+  remove_stopwords: true
+  lowercase: true
+  
+# Machine Learning configuration
+ml:
+  model_path: "models/news_classifier.onnx"
+  model_type: "onnx"  # Options: "onnx", "pytorch", "tensorflow", "sklearn"
+  batch_inference: true
+  batch_size: 32
+  device: "cpu"  # Options: "cpu", "cuda", "mps"
+  confidence_threshold: 0.7
+  labels:
+    - "technology"
+    - "sports"
+    - "politics"
+    - "entertainment"
+    - "business"
+
+# Embeddings configuration
+embeddings:
+  model_path: "models/sentence_encoder.onnx"
+  model_type: "onnx"
+  embedding_dim: 384
+  normalize: true
+  pooling: "mean"  # Options: "mean", "max", "cls"
+  max_length: 512
+  
+# Logging configuration
+logging:
+  level: "INFO"  # Options: "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  output: "both"  # Options: "console", "file", "both"
+  file_path: "logs/pipeline.log"
+  max_file_size: 10485760  # 10MB in bytes
+  backup_count: 5
+  log_to_cloud: false
+  
+# Processing configuration  
+processing:
+  batch_size: 32
+  max_workers: 4
+  error_handling: "skip"  # Options: "skip", "stop", "log"
+  retry_attempts: 3
+  retry_delay: 5  # seconds
+  checkpoint_enabled: true
+  checkpoint_interval: 100  # Process every N items
+

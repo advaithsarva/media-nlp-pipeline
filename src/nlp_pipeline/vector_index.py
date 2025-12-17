@@ -1,4 +1,8 @@
 #FAISS or similar index for vector search / nearest neighbours / semantic similarity.
+import numpy as np
+# TODO: import faiss
+
+from typing import Dict, Any, List, Tuple
 class VectorIndex:
     def __init__(self,index_config):
         pass

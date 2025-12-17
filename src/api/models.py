@@ -1,10 +1,12 @@
 '''Pydantic models for request/response schemas used by FastAPI.
 Ties directly to input_schema.json and output_schema.json.'''
-class AnalyzeRequest:
+from typing import List,Optional,Dict,Any
+from pydantic import BaseModel
+class AnalyzeRequest(BaseModel):
     pass
-class SentenceLabel:
+class SentenceLabel(BaseModel):
     pass
-class DocumentScore:
+class DocumentScore(BaseModel):
     pass
-class AnalyzeResponse:
+class AnalyzeResponse(BaseModel):
     pass
