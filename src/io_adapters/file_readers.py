@@ -114,6 +114,33 @@ class BaseReader(ABC):
             }
             self.write_to_jsonl(error_data, "errors.jsonl")
             return False
+    def _extract_strings_only(self, obj):
+        """
+        Recursively keep only string values.
+        Preserves structure.
+        """
+        if isinstance(obj, str):
+            return obj
+
+        if isinstance(obj, dict):
+            filtered = {}
+            for k, v in obj.items():
+                result = self._extract_strings_only(v)
+                if result is not None:
+                    filtered[k] = result
+            return filtered if filtered else None
+
+        if isinstance(obj, list):
+            filtered_list = []
+            for item in obj:
+                result = self._extract_strings_only(item)
+                if result is not None:
+                    filtered_list.append(result)
+            return filtered_list if filtered_list else None
+
+        # drop everything else (int, float, bool, null, etc.)
+        return None
+
 
 class TxtReader(BaseReader):
     """Reader for .txt, .text files"""
@@ -491,12 +518,13 @@ class JSONReader(BaseReader):
         
         try:
             json_data = json.loads(raw_content)
-            
+            string_only_json = self._extract_strings_only(json_data)
+
             return {
                 **metadata,
                 'encoding_detected': encoding,
                 'raw_json_string': raw_content,
-                'parsed_json': json_data,
+                'parsed_json': string_only_json,
                 'json_structure': {
                     'root_type': type(json_data).__name__,
                     'is_array': isinstance(json_data, list),
@@ -532,6 +560,8 @@ class JSONReader(BaseReader):
             return current_depth
 
 
+
+
 class JSONLReader(BaseReader):
     """Reader for .jsonl, .ndjson files"""
     
@@ -550,10 +580,13 @@ class JSONLReader(BaseReader):
                 
                 try:
                     record = json.loads(line)
-                    records.append({
-                        'line_number': line_num,
-                        'data': record
-                    })
+                    string_only = self._extract_strings_only(record)
+
+                    if string_only:
+                        records.append({
+                            'line_number': line_num,
+                            'data': string_only
+                        })
                 except json.JSONDecodeError as e:
                     errors.append({
                         'line_number': line_num,
