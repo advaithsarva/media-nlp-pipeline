@@ -5,7 +5,7 @@ from datetime import datetime
 with DAG(
     "media_nlp_batch",
     schedule_interval="@daily",
-    start_date=datetime(2025, 1, 1),
+    start_date=datetime(2026, 2, 21),
     catchup=False,
 ) as dag:
 
@@ -20,3 +20,4 @@ with DAG(
     )
 
     preprocess >> classify
+    

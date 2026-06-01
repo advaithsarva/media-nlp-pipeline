@@ -28,4 +28,7 @@ class LocalStorageWriter:
 class StorageClientFactory:
     pass
 
+class JSONLWriter:
+    pass
+
 

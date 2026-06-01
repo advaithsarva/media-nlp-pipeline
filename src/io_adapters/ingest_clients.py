@@ -50,11 +50,4 @@ class RedisClient:
     def fetch(self, _ignored) -> Iterable[InternalDocument]:
         pass
 
-class AudioClient:
-    def __init__(self):
-        pass
-        
-class VideoClient:
-    def __init__(self):
-        pass
 

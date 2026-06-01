@@ -829,19 +829,19 @@ class SQLReader(BaseReader):
         records = df.to_dict('records')
         
         return
-class AudioReader:
-    def __init__(self):
-        pass
+# class AudioReader:
+#     def __init__(self):
+#         pass
                
-class ParquetReader:
-    def __init__(self):
-        pass
+# class ParquetReader:
+#     def __init__(self):
+#         pass
 
-class HadhoopReader:
-    def __init__(self):
-        pass
+# class HadhoopReader:
+#     def __init__(self):
+#         pass
 
-class ArchiveReader:
-    def __init__(self):
-        pass
+# class ArchiveReader:
+#     def __init__(self):
+#         pass
 
