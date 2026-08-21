@@ -1,4 +1,4 @@
-# NLPpipeline — Deterministic, Config-Driven Media NLP System
+# media-nlp-pipeline — Deterministic, Config-Driven Media NLP System
 
 A deterministic, configuration-driven NLP processing framework for high-integrity media and document analysis. The system emphasises reproducibility, auditability, modularity, and strict schema-validated outputs.
 
@@ -13,16 +13,22 @@ is built, tested and working as of **2026-08-21**.
 
 **Working end to end:** a document goes in, a schema-validated JSON report comes out, every
 finding is a verbatim substring of the source at the character offsets given, and two runs
-produce byte-identical bytes. 162 tests pass.
+produce byte-identical bytes. 164 tests pass.
 
 ```
-git clone <this repo> && cd NLPpipline
+git clone https://github.com/advaithsarva/media-nlp-pipeline
+cd media-nlp-pipeline
 py -3.10 -m venv .venv
 .venv\Scripts\python.exe -m pip install pyyaml pysbd jsonschema numpy pytest charset-normalizer
-.venv\Scripts\python.exe src\main.py --input data
-aw\sample_article.txt
+.venv\Scripts\python.exe -m pip install "spacy>=3.8" vaderSentiment
+.venv\Scripts\python.exe -m spacy download en_core_web_sm
+.venv\Scripts\python.exe src\main.py --input data\raw\sample_article.txt
 .venv\Scripts\python.exe -m pytest
 ```
+
+spaCy and VADER are needed only by two detectors (`scapegoating`, `card_stacking`). Drop
+those two categories from `conf/taxonomy_v1.yaml` and the first six packages are enough —
+the entity stage is then never loaded.
 
 Add `--save` to store the record where `output.type` in `conf/pipeline_v1.yaml` says
 (`jsonl` by default). For the HTTP service:
@@ -131,7 +137,7 @@ Line-by-line notes on every module live in `observe.md` §8-§11.
 
 ## 1. Overview
 
-`NLPpipeline` transforms raw documents from any source (files, APIs, streams, databases) into structured, taxonomy-mapped, and score-annotated JSON outputs.
+`media-nlp-pipeline` transforms raw documents from any source (files, APIs, streams, databases) into structured, taxonomy-mapped, and score-annotated JSON outputs.
 
 Capabilities:
 
@@ -211,8 +217,7 @@ flowchart TD
 ## 3. Directory Layout
 
 ```
-NLPpipline/
-├── CLAUDE.md                        # Project context for AI-assisted development
+media-nlp-pipeline/
 ├── README.md
 ├── Dockerfile
 ├── .dockerignore
