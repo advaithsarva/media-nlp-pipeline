@@ -136,6 +136,22 @@ class RuleEngine:
 
     # ---------- the detectors ----------
 
+    def _quoted_regions(self, text):
+        """(start, end) of every stretch between a matched pair of quotation marks.
+
+        Straight and curly quotes both count. Anything longer than 600 characters is
+        discarded as an unmatched opening quote rather than a real quotation -- otherwise
+        one stray apostrophe swallows half the article.
+        """
+        regions = []
+        for pattern in (r'"([^"]{1,600})"', r'“([^”]{1,600})”'):
+            for match in re.finditer(pattern, text):
+                regions.append((match.start(), match.end()))
+        return regions
+
+    def _in_quotation(self, start, end, regions):
+        return any(a <= start and end <= b for a, b in regions)
+
     def _span(self, doc, sentence, start, end, rule, confidence=None):
         cat = rule["category"]
         return EvidenceSpan(
@@ -146,6 +162,7 @@ class RuleEngine:
             category=cat.id,
             confidence=cat.base_confidence if confidence is None else confidence,
             sentence_id=sentence.sentence_id,
+            in_quotation=self._in_quotation(start, end, self._quotes),
         )
 
     def _is_supported(self, sentence_text, rule):
@@ -208,6 +225,15 @@ class RuleEngine:
             # "of the people in" repeats in any long document and means nothing. A phrase
             # only counts as deliberate repetition if it carries at least one real word.
             if all(w.is_stop for w in group):
+                continue
+            # And a phrase containing a named entity is the document's subject, not a
+            # slogan. Validation against Wikipedia showed this dominating everything else:
+            # "the North British Railway" and "the light-dependent reactions" repeat
+            # because the article is about them.
+            start_of_group = group[0].idx
+            end_of_group = group[-1].idx + len(group[-1].text)
+            if any(e.start_char < end_of_group and start_of_group < e.end_char
+                   for e in doc.entities):
                 continue
             phrase = " ".join(w.lower for w in group)
             start = group[0].idx
@@ -337,6 +363,8 @@ class RuleEngine:
     # ---------- entry point ----------
 
     def classify(self, doc: NormalizedDocument) -> RuleClassificationResult:
+        # computed once per document and read by _span
+        self._quotes = self._quoted_regions(doc.text)
         spans = []
 
         for rule in self.rules:

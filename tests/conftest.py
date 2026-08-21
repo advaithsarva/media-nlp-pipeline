@@ -67,7 +67,8 @@ CATEGORY_EXAMPLES = {
     "hedging": "The change may possibly reduce costs, which suggests a saving.",
     "repetition": (
         "We will take back control. The plan is sound. We will take back control of the "
-        "borders. Critics disagree. We will take back control, he said again."
+        "borders. Critics disagree. We will take back control, he said again. "
+        "And once more: we will take back control."
     ),
     # These two need the spaCy entity stage, which build_doc runs when the taxonomy asks
     # for it. Both need the pattern repeated across separate sentences, which is why the

@@ -96,7 +96,7 @@ def test_repetition_reports_one_span_per_occurrence(engine, build_doc):
     result = engine.classify(build_doc(CATEGORY_EXAMPLES["repetition"]))
     spans = result.spans_for("repetition")
 
-    assert len(spans) == 3          # the slogan appears three times, not once per n-gram
+    assert len(spans) == 4          # the slogan appears four times, not once per n-gram
     for a, b in zip(spans, spans[1:]):
         assert a.end_char <= b.start_char
 

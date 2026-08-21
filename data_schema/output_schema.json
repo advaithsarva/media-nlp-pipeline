@@ -115,7 +115,8 @@
           "text",
           "start_char",
           "end_char",
-          "confidence"
+          "confidence",
+          "in_quotation"
         ],
         "properties": {
           "category": {
@@ -144,6 +145,10 @@
             "type": "number",
             "minimum": 0,
             "maximum": 1
+          },
+          "in_quotation": {
+            "type": "boolean",
+            "description": "True when the match sits inside quotation marks. Reporting someone else's loaded language is not the same as using it."
           }
         }
       }

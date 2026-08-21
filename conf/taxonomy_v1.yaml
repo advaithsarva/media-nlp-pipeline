@@ -80,6 +80,9 @@ categories:
       common literal meanings (clown, snake, rat, puppet) are excluded because they fire on
       ordinary prose. Political labels used pejoratively (socialist, elitist) need tone
       context to judge and are left to the ML stage.
+      Removed after validation against Wikipedia: "lunatic" and "madman", which fired on
+      the Van Gogh page describing how he was regarded in his lifetime and on the name of
+      an institution ("the lunatic asylum in Geel").
     detector: lexicon
     base_confidence: 0.85
     severity_weight: 0.7
@@ -95,8 +98,6 @@ categories:
       - demagogue
       - buffoon
       - stooge
-      - lunatic
-      - madman
       - zealot
       - bigot
       - grifter
@@ -144,6 +145,8 @@ categories:
       Fear used in place of argument. The lexicon is restricted to words that carry
       alarm on their own, and excludes the vocabulary of ordinary disaster reporting
       (flood, earthquake, casualties) which describes fear-inducing events factually.
+      Removed after validation: "annihilation", which fired on the Quantum entanglement
+      page -- electron-positron annihilation is a physics term.
     detector: lexicon
     base_confidence: 0.8
     severity_weight: 0.9
@@ -152,7 +155,6 @@ categories:
       - catastrophe
       - apocalyptic
       - doomed
-      - annihilation
       - terrifying
       - nightmarish
       - dire consequences
@@ -456,13 +458,17 @@ categories:
       The same phrase driven home again and again. claudenew.md 13.2 specifies counting
       n-grams across the document and flagging anything that appears three times or more.
       Phrases made entirely of stopwords ("of the people in") are skipped by the engine,
-      because those repeat in any long document and mean nothing.
+      as are phrases containing a named entity -- validation against Wikipedia showed that
+      one dominating everything else, because an encyclopaedia article necessarily repeats
+      its own subject ("the North British Railway", "the light-dependent reactions").
+      min_repeats raised from 3 to 4 for the same reason: three repeats is ordinary in any
+      long-form writing.
     detector: repetition
     base_confidence: 0.8
     severity_weight: 0.4
     disruption: 0.2
     ngram_size: 4
-    min_repeats: 3
+    min_repeats: 4
 
   - id: hedging
     name: "Hedging"
@@ -510,22 +516,26 @@ categories:
     base_confidence: 0.8
     severity_weight: 0.9
     disruption: 0.5
-    entity_labels: [ORG, NORP, GPE]
+    # ORG was dropped after validation against Wikipedia. It produced every false
+    # positive: "AMR was responsible for 1.27 million deaths", "caused by the bacterium
+    # Yersinia pestis", "Morcom's death caused Turing great sorrow". Those are causal
+    # mechanism, not blame. Scapegoating targets groups of people, which is NORP, GPE and
+    # the group nouns below -- so restricting the labels costs nothing and removes all three.
+    entity_labels: [NORP, GPE]
     min_blamed_sentences: 2
+    # Accusation words only. "caused", "cause of", "brought about", "ruined",
+    # "driving up" and "flooding" were removed after validation: they describe mechanism,
+    # not blame, and produced "caused by the bacterium Yersinia pestis" as a finding.
     terms:
       - blame
       - blamed
       - blaming
-      - responsible for
+      - to blame for
       - at fault
       - fault of
-      - cause of
-      - caused
-      - ruined
-      - to blame for
-      - brought about
-      - driving up
-      - flooding
+      - responsible for
+      - scapegoat
+      - scapegoated
 
     # Group nouns NER will never return. Deliberately generic categories of people, not
     # slurs: the detector's job is to notice that one group is repeatedly blamed, whoever

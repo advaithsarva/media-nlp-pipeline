@@ -56,3 +56,24 @@ jsonl_output/
 # Evaluation output (the gold set IS tracked; the generated report is not)
 eval/report.md
 eval/results.json
+
+# ---------------------------------------------------------------------------
+# Working notes and design documents stay local.
+# CLAUDE.md, observe.md and claudenew.md are personal working notes, not the
+# product. README.md is the only markdown the repository publishes.
+*.md
+!README.md
+
+# Fetched validation corpus. The fetch script is committed so the corpus is
+# reproducible; the text itself is somebody else's and is not redistributed here.
+eval/corpus/
+eval/report.md
+eval/validation.md
+eval/validation.json
+eval/results.json
+
+# spaCy model is installed via pip, not committed
+en_core_web_sm/
+
+# Notebook scratch output
+notebooks/test_output/

@@ -94,7 +94,10 @@ def test_scapegoating_fires_on_a_repeatedly_blamed_group(engine, build_doc):
     result = engine.classify(build_doc(SCAPEGOAT_TEXT))
     spans = result.spans_for("scapegoating")
 
-    assert len(spans) == 3
+    # Two, not three. The text blames migrants in three sentences, but "Migrants caused
+    # the strain" uses a causal verb, and "caused" was removed from the blame lexicon
+    # after it produced "caused by the bacterium Yersinia pestis" on real text.
+    assert len(spans) == 2
     assert all(s.text == "Migrants" for s in spans)
 
 

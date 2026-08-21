@@ -36,6 +36,7 @@ class PostProcessor:
             "start_char": s.start_char,
             "end_char": s.end_char,
             "confidence": s.confidence,
+            "in_quotation": s.in_quotation,
         } for s in scored.spans]
 
         record = {

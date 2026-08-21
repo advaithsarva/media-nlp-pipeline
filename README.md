@@ -59,6 +59,39 @@ co-occur heavily, so the product saturates. On the sample article it returns **0
 implemented and `prop_score_method` selects; the default is a smooth-max, which returns 0.48 on
 the same evidence. See `observe.md` §10.4.
 
+## Measured on real published text
+
+The detectors were run over **29 Wikipedia articles (51,442 words)** — neutral-point-of-view
+prose written by people who had never heard of this project, including politics, war and
+disaster pages that carry charged vocabulary while still being neutrally written — and over
+**four public-domain political speeches** as a contrast.
+
+| Corpus | Words | Core findings /1,000 words |
+|---|---|---|
+| Wikipedia (neutral) | 51,442 | **0.175** |
+| Speeches (rhetorical) | 4,708 | **1.062** |
+
+**6.1x separation.** "Core" excludes `hedging` (tracked as style, never counted as
+manipulation) and `repetition` (which fires on an encyclopaedia repeating its own subject).
+
+Reproduce it:
+
+```
+PYTHONPATH=src .venv\Scripts\python.exe -m evaluation.fetch_corpus --out eval/corpus
+PYTHONPATH=src .venv\Scripts\python.exe -m evaluation.validate_corpus --report eval/validation.md
+```
+
+The report lists **every** neutral finding with surrounding context, because each one is a
+candidate false positive that should be judged rather than assumed. That listing is what
+drove five fixes: `repetition` was firing on "the light-dependent reactions", `scapegoating`
+on "caused by the bacterium Yersinia pestis", `appeal_to_fear` on electron-positron
+annihilation. Neutral firing rate went from 6.22 to 3.40 per 1,000 words overall, and
+separation from 1.5x to 6.1x on the core detectors.
+
+Findings inside quotation marks are flagged `in_quotation: true` rather than dropped —
+reporting someone else's loaded language is not the same as using it, and after this
+validation it is the largest remaining false-positive source.
+
 **No accuracy figure exists, and the harness says so.** The bundled 40-example gold set was
 written by the same person who wrote the detectors, so its 1.000 F1 measures whether each detector
 does what it was specified to do — a regression tripwire, not evidence that the specification

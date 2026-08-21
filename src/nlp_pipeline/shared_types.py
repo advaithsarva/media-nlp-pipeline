@@ -76,6 +76,12 @@ class EvidenceSpan:
     category: str
     confidence: float
     sentence_id: int
+    # True when the match sits inside quotation marks. Reporting someone else's loaded
+    # language is not the same as using it, and validation against real text showed this
+    # is the single largest source of false positives. The finding is flagged rather than
+    # dropped: for gaslighting the design explicitly wants quotes flagged, and a reader
+    # can filter on this either way.
+    in_quotation: bool = False
 
 
 @dataclass

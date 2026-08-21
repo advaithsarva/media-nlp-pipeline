@@ -141,3 +141,51 @@ def test_the_report_warns_when_the_score_is_perfect(results):
 
     if results["micro"]["f1"] == 1.0:
         assert "expected result, not a good one" in report
+
+
+# ---- validation against real published text ----
+
+CORPUS = ROOT / "eval" / "corpus"
+
+# The corpus is fetched live and gitignored, so these skip on a fresh clone until
+# `python -m evaluation.fetch_corpus` has been run.
+needs_corpus = pytest.mark.skipif(
+    not (CORPUS / "manifest.json").exists(),
+    reason="run: python -m evaluation.fetch_corpus",
+)
+
+
+@pytest.fixture(scope="module")
+def corpus_results():
+    from evaluation.validate_corpus import run_group, summarise_by_category
+    from main import PipelineRunner
+
+    manifest = json.loads((CORPUS / "manifest.json").read_text(encoding="utf-8"))
+    runner = PipelineRunner()
+    neutral = run_group(runner, CORPUS / "neutral", manifest["neutral"]["documents"])
+    return neutral, summarise_by_category(neutral, runner.taxonomy.ids())
+
+
+@needs_corpus
+def test_the_false_positive_rate_on_real_prose_stays_low(corpus_results):
+    """The regression guard that actually means something.
+
+    Excludes hedging (style, never counted as manipulation) and repetition (which fires
+    on an encyclopaedia repeating its own subject). Everything else firing on Wikipedia
+    is a candidate false positive, and the measured rate was 0.175 per 1,000 words.
+    """
+    neutral, by_category = corpus_results
+    core = sum(v["count"] for k, v in by_category.items()
+               if k not in ("hedging", "repetition"))
+    rate = core / neutral["words"] * 1000
+
+    assert rate < 0.5, "false-positive rate on Wikipedia rose to %.3f per 1,000 words" % rate
+
+
+@needs_corpus
+def test_offsets_survive_on_somebody_elses_text(corpus_results):
+    """run_group asserts the slice invariant per finding; this proves it actually ran."""
+    neutral, _ = corpus_results
+
+    assert neutral["documents"] >= 5
+    assert neutral["words"] > 10000
