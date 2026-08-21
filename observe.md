@@ -752,3 +752,189 @@ To run anything after a restart:
 .venv\Scripts\python.exe src\main.py --input data\raw\sample_article.txt
 .venv\Scripts\python.exe -m pytest
 ```
+
+---
+
+# 9. Build log — Phase 1 (same session, 2026-08-21)
+
+Phase 0 made the pipeline *work*. Phase 1 makes it *usable by something other than a person at a
+terminal*: results can be stored, and a backend can call it over HTTP. Test count went 43 → 61.
+
+Two Phase 1 items from `CLAUDE.md` were **deliberately not built** — reasons in §9.5.
+
+---
+
+## 9.1 `src/io_adapters/storage_clients.py` — rewritten
+
+**What was there:** `ParquetWriter`, `RedisWriter`, `LocalStorageWriter`, `StorageClientFactory`
+and `JSONLWriter`, every method `pass`, with `import pandas` and `import redis` at the top so the
+file could not even be imported without both installed.
+
+**What it is now:** three writers and a factory. `RedisWriter` was **deleted** (Redis is frozen
+under R7) and `LocalStorageWriter` was **deleted** as well — it was the same idea as `JSONWriter`
+under a vaguer name. Two classes removed rather than filled in.
+
+**The rule the module obeys:** a writer takes the finished record and puts it somewhere. It never
+changes it. If a writer reshaped the data, two storage backends would end up holding different
+answers to the same question.
+
+| Code | What it does and why |
+|---|---|
+| `class JSONLWriter` | one JSON object per line. Append-friendly, greppable, opens in a text editor, and needs nothing beyond the standard library — which is why it is now the default. |
+| `mode = "a" if (self.append or self._started) else "w"` | the fiddly bit. The **first** write of a run truncates the file (unless `append: true` in config); every write **after** that in the same run appends. Without the `_started` flag, a batch of 50 records would leave a file containing exactly one. |
+| `sort_keys=True` in the dump | same reason as everywhere else — the same record must serialise to the same bytes |
+| `class JSONWriter` | one file per document, named from the first 16 characters of the document id. Sixteen hex characters is plenty to tell documents apart and keeps the filename readable. |
+| `class ParquetWriter` | columnar storage, worth it once you have thousands of records to query rather than read |
+| `_flatten(record)` | Parquet columns hold single values, not nested structures, so `findings` and `category_scores` are stored as JSON strings in one column each. The alternative — one row per finding — makes the document-level scores repeat on every row. |
+| `import pyarrow` inside `save_batch` | pyarrow is large and nothing else needs it. Not installed in `.venv`; the writer will raise `ImportError` if used, which is the right failure. |
+| `ParquetWriter.write` calls `save_batch([record])` | Parquet writes whole files, not lines. Writing one record means rewriting the file, which is exactly why this format is for batches. |
+| `class StorageClientFactory` | a dict from the `output.type` string to the class. Adding a backend is one dict entry. |
+| the `if kind not in cls.WRITERS` check | a typo in the config fails at startup with the list of valid options, not silently |
+
+**Config change** in `conf/pipeline_v1.yaml`: `output.type` was `"parquet"`, which would have
+crashed on first use because pyarrow is not installed. Now `"jsonl"`, with `path: data/processed`
+and `file: records.jsonl`.
+
+**Wired into `main.py`:** a new `--save` flag. Without it nothing is written to storage (the JSON
+still goes to the screen or to `--out`); with it, `StorageClientFactory.create(...)` builds the
+writer named in config and `save_batch` runs.
+
+---
+
+## 9.2 `src/api/models.py` — rewritten
+
+**What was there:** four class names with `pass` bodies.
+
+**What it is now:** nine pydantic models. A *pydantic model* is a class that declares field names
+and types; pydantic checks incoming JSON against them and rejects anything that does not fit
+**before** the request reaches any pipeline code. A caller sending a number where text belongs
+gets a clear `422 Unprocessable Entity` rather than a crash halfway through segmentation.
+
+| Model | Purpose |
+|---|---|
+| `AnalyzeRequest` | `text` (required, `min_length=1`), plus optional `title`, `author`, `language` |
+| `Finding` | one evidence span, field for field as it appears in the output record |
+| `CategoryScore` | `count`, `raw`, `score`, `calibrated` |
+| `DocumentStats`, `DocumentSource` | the two small nested blocks |
+| `AnalyzeResponse` | the whole record, with `composite: Optional[float] = None` |
+| `BatchAnalyzeRequest` / `BatchAnalyzeResponse` | a list of each |
+| `HealthResponse` | status, taxonomy version, category list, config hashes |
+
+**Worth being clear about which contract is authoritative.** `data_schema/output_schema.json` is
+the contract of record — it is what `PostProcessor.validate` enforces on **every** run, HTTP or
+not. These pydantic classes duplicate that shape so FastAPI can publish it as OpenAPI
+documentation at `/docs`. If the two ever disagree, the JSON Schema wins and the pydantic model
+is the thing that is out of date.
+
+---
+
+## 9.3 `src/api/service.py` — rewritten
+
+**What was there:** imports of `build_services` and `process_document` (a function that no longer
+exists in that form) and `def create_app(): pass`.
+
+| Code | What it does and why |
+|---|---|
+| `create_app(conf_dir=None)` | a factory rather than a bare module-level app, so tests can build an app pointed at a different config directory |
+| `runner = PipelineRunner()` **inside** `create_app`, before the routes | built **once**, at startup, reused for every request. Building it per request would recompile every regex and reread the JSON schema on each call, and would re-seed the random generators mid-flight. |
+| `GET /health` | returns the taxonomy version, the category list and the config hashes. Not just "is it up" — it tells a caller *which configuration* is answering, which matters when results have to be reproducible. |
+| `POST /analyze` | `request.model_dump()` turns the pydantic object back into a plain dict, which is what `route_push_input` expects |
+| `payload["source_type"] = "api_rest"` | the router treats a bare string as a file path when a file of that name exists. Wrapping HTTP text in a dict with an explicit source type removes that ambiguity entirely. |
+| `except IngestionError → 400` | the caller sent something unusable; that is their problem |
+| `except ValueError → 500` | the pipeline produced something that failed its own schema or evidence check; that is our problem. Splitting the two means the status code actually tells the caller who has to fix something. |
+| `POST /analyze/batch` | loops; refuses an empty list with a 400 rather than returning an empty success |
+| `app = create_app()` at module level | uvicorn needs a module-level object to serve |
+
+Run it with:
+
+```
+.venv\Scripts\python.exe -m uvicorn api.service:app --app-dir src --reload
+```
+
+Installed for this: `fastapi`, `uvicorn`, `httpx` (httpx only so the tests can call the app).
+
+---
+
+## 9.4 New tests — 18 of them
+
+**`tests/test_storage_clients.py`** (9 tests). A fixed `RECORD` constant stands in for pipeline
+output, so these tests do not need the pipeline at all.
+
+- round-trip: what comes back out of the JSONL file `==` what went in
+- `test_jsonl_appends_within_one_run` — three records, three lines. This is the test that would
+  have caught the truncation bug if the `_started` flag had been forgotten.
+- `test_jsonl_starts_fresh_on_a_new_run` — a second `JSONLWriter` truncates
+- `test_writing_twice_produces_identical_bytes` — determinism, at the storage layer
+- three factory tests: right class per config string, defaults to JSONL, refuses nonsense
+- `test_parquet_flattening_keeps_everything` — checks `_flatten` without needing pyarrow installed
+
+**`tests/test_api.py`** (9 tests). Uses `fastapi.testclient.TestClient`, which calls the app
+in-process — no server, no port, no network.
+
+- `pytest.importorskip("fastapi.testclient")` at the top: if FastAPI is not installed the whole
+  file skips instead of erroring, so the core suite still runs on a minimal environment
+- `/health` reports the taxonomy and a 64-character config hash
+- **offsets survive the round trip** — every finding is sliced back out of the text the client
+  sent
+- neutral text returns an empty findings list
+- the same request twice returns the identical body
+- empty text and missing text both get **422** (pydantic rejects them, the pipeline is never
+  reached) — while an empty *batch* gets **400**, because that check is ours
+- no composite and nothing calibrated over HTTP either
+
+---
+
+## 9.5 Phase 1 items deliberately not built
+
+Two things `CLAUDE.md` lists under Phase 1 were skipped on purpose. Both are written down here
+rather than quietly dropped.
+
+**`ontology_graph.py` — a hierarchy over five flat categories.** The point of an ontology graph is
+multi-label classification over a *tree*: "name-calling is a kind of ad-hominem, which is a kind
+of fallacy of relevance". `taxonomy_v1.yaml` has five sibling categories and no tree. Building the
+graph now means building the machinery for a structure that does not exist yet, and it would have
+to be rebuilt the moment the real hierarchy arrives. It belongs with `taxonomy_v2`.
+
+**`features.py` Phase-1 layers (structural, lexical, entity, sentiment).** Nothing consumes them.
+`RuleEngine` reads the text and the taxonomy; `ScoringEngine` reads only the evidence spans.
+Adding four feature layers today produces four classes that compute numbers nobody looks at — and
+the entity layer needs spaCy plus a model download, and the sentiment layer needs a lexicon that
+would itself need the R2 false-positive treatment. They become worth building when there is a
+consumer: the ML classifier (Phase 2, gated on a labelled evaluation set).
+
+The class-name typos in `features.py` were still fixed (`Bais` → `Bias`), because that costs
+nothing and stops the typo from being copied into real code later.
+
+---
+
+## 9.6 Terminal log — Phase 1
+
+| # | Command | Purpose / result |
+|---|---|---|
+| 23 | `git add -A && git commit` | Phase 0 committed as `8c5c9a8`, author `Sarva Advaith Narayana`, no Claude trailers (R16) |
+| 24 | `PY -m pip install fastapi uvicorn httpx` | fastapi 0.141.1, uvicorn 0.52.4, httpx 0.28.1, pydantic 2.13.4 |
+| 25 | edited `conf/pipeline_v1.yaml` output block | `type: parquet` → `jsonl`; parquet would have crashed on first use, pyarrow is not installed |
+| 26 | `PY src/main.py --input … --save` | `stored: data\\processed\\records.jsonl`, one line, valid JSON |
+| 27 | `PY -m pytest` | **61 passed** |
+
+---
+
+## 9.7 Where things stand
+
+| | Phase 0 | Phase 1 |
+|---|---|---|
+| Pipeline runs end to end | yes | yes |
+| Byte-identical reruns | yes | yes, including at the storage layer |
+| Results can be stored | no | JSONL, JSON, Parquet (pyarrow required) |
+| Callable by a backend | no | `/health`, `/analyze`, `/analyze/batch` |
+| Tests | 43 | 61 |
+
+**Still true and still the most important caveat:** the scores are uncalibrated. Nothing in this
+system has been measured against labelled data. It reports how much evidence its five detectors
+found, using thresholds chosen by hand. That is a useful, auditable thing — and it is not the same
+as knowing how biased an article is.
+
+**Next, unchanged from §8.19:** run it on real articles you have an opinion about, then the R8
+literature review. Phase 2 (ML classifier, hybrid router, composite scoring, feature layers) stays
+gated on a labelled evaluation set — building it before that measurement exists is how you get a
+confident number nobody can defend.

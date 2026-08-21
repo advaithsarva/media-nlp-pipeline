@@ -27,6 +27,7 @@ CONF_DIR = ROOT / "conf"
 sys.path.insert(0, str(ROOT / "src"))
 
 from io_adapters.input_router import InputRouter                    # noqa: E402
+from io_adapters.storage_clients import StorageClientFactory        # noqa: E402
 from taxonomy_tools.taxonomy_loader import load_taxonomy            # noqa: E402
 from nlp_pipeline.preprocessing import TextProcessor                # noqa: E402
 from nlp_pipeline.segmentation import SentenceSegmenter             # noqa: E402
@@ -100,6 +101,8 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description="Run the NLP pipeline on one document.")
     parser.add_argument("--input", help="path to a file, or a quoted string of text")
     parser.add_argument("--out", help="write the JSON here instead of to the screen")
+    parser.add_argument("--save", action="store_true",
+                        help="also store the records using the writer named in pipeline_v1.yaml")
     parser.add_argument("--conf", default=str(CONF_DIR), help="config directory")
     args = parser.parse_args(argv)
 
@@ -109,6 +112,10 @@ def main(argv=None):
         records = [runner.process_document(args.input)]
     else:
         records = runner.run_pipeline()
+
+    if args.save:
+        writer = StorageClientFactory.create(runner.pipeline_conf.get("output", {}))
+        print("stored: " + str(writer.save_batch(records)))
 
     output = json.dumps(
         records[0] if len(records) == 1 else records,

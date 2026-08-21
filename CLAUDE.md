@@ -64,9 +64,10 @@ Five constraints that govern every design choice:
   `data_schema/output_schema.json`.
 - **Scalable** — batch via Airflow + Spark/Ray; real-time via API.
 
-**Status: Phase 0 complete (2026-08-21).** `python src/main.py --input article.txt` runs end to
+**Status: Phases 0 and 1 complete (2026-08-21).** `python src/main.py --input article.txt` runs end to
 end, emits schema-valid JSON with verbatim evidence spans and true character offsets, and two
-consecutive runs are byte-identical. 43 tests pass. All five known bugs are fixed. Environment is
+consecutive runs are byte-identical. Results can be stored (JSONL/JSON/Parquet) and the pipeline
+is callable over HTTP (`/health`, `/analyze`, `/analyze/batch`). 61 tests pass. All five known bugs are fixed. Environment is
 `.venv` on Python 3.10.10 with six packages.
 **Read `observe.md` §8 first** — it is the line-by-line build log for everything that now exists.
 Phases 1–3 are still unbuilt.
@@ -467,11 +468,14 @@ byte-identical rerun. This is the "stupid simple pipeline" of §30, and it is th
 verbatim spans and offsets, two consecutive runs are byte-identical, and every detector has a
 passing false-positive test.
 
-### Phase 1 — only after Phase 0 runs
+### Phase 1 — done, except two items deliberately deferred
 
-`taxonomy_loader.py` + `ontology_graph.py` (multi-label, hierarchy) · `features.py` Phase-1
-layers only (structural, lexical, entity, sentiment — §11) · `storage_clients.py`
-(JSONLWriter/ParquetWriter, canonical schema §5.2) · `api/service.py` + `api/models.py`.
+Done: `taxonomy_loader.py` · `storage_clients.py` (JSONLWriter / JSONWriter / ParquetWriter +
+factory) · `api/service.py` + `api/models.py`.
+
+**Deferred with reasons** (`observe.md` §9.5): `ontology_graph.py` — the taxonomy is five flat
+categories with no hierarchy, so there is no tree to walk yet; `features.py` Phase-1 layers —
+nothing consumes them until the ML classifier exists, which is Phase 2.
 
 ### Phase 2 — only with a labelled evaluation set in hand
 

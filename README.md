@@ -6,6 +6,52 @@ A deterministic, configuration-driven NLP processing framework for high-integrit
 
 ---
 
+## Status — what actually runs today
+
+Most of this document describes the intended full system. This section describes the part that
+is built, tested and working as of **2026-08-21**.
+
+**Working end to end:** a document goes in, a schema-validated JSON report comes out, every
+finding is a verbatim substring of the source at the character offsets given, and two runs
+produce byte-identical bytes. 61 tests pass.
+
+```
+git clone <this repo> && cd NLPpipline
+py -3.10 -m venv .venv
+.venv\Scripts\python.exe -m pip install pyyaml pysbd jsonschema numpy pytest charset-normalizer
+.venv\Scripts\python.exe src\main.py --input dataaw\sample_article.txt
+.venv\Scripts\python.exe -m pytest
+```
+
+Add `--save` to store the record where `output.type` in `conf/pipeline_v1.yaml` says
+(`jsonl` by default). For the HTTP service:
+
+```
+.venv\Scripts\python.exe -m pip install fastapi uvicorn
+.venv\Scripts\python.exe -m uvicorn api.service:app --app-dir src
+# then GET /health, POST /analyze {"text": "..."}, POST /analyze/batch, docs at /docs
+```
+
+| Area | State |
+|---|---|
+| Ingestion | `.txt` proven end to end. `.md .pdf .docx .csv .tsv .json .jsonl .html .htm .xml` are wired into `EXTENSION_MAP` and import cleanly, but each needs its own library installed (`pdfplumber`, `python-docx`, `beautifulsoup4`, `pandas`) and none has been exercised. |
+| Preprocessing | Working. Tokenises with true character offsets and never rewrites the text. |
+| Segmentation | Working. pysbd, paragraph-first, exact offsets, handles hard-wrapped plain text. |
+| Detection | 5 categories: loaded language, name-calling, bandwagon, unsupported quantifier, source opaqueness. Precision-first; each has a passing false-positive test against neutral text. |
+| Scoring | One score per category. **No composite headline number** — the detectors are not calibrated, so publishing one would be misleading. |
+| Output | `data_schema/output_schema.json`, validated on every run. Contains no timestamp, by design. |
+| Storage | JSONL and per-document JSON work with no extra dependencies; Parquet needs `pyarrow`. |
+| API | `/health`, `/analyze`, `/analyze/batch` on FastAPI. |
+| Not built | feature layers, ML classifier, hybrid router, embeddings, FAISS, ontology graph, Airflow, Spark/Ray, the non-file ingestion adapters, the C++/CUDA accelerators. |
+
+Scores are **uncalibrated**. No labelled evaluation set has been used, so the numbers describe how
+much evidence was found, not how biased a piece is. Determinism is an audit property: it proves a
+result can be re-derived, not that it is correct.
+
+Line-by-line notes on every module live in `observe.md` §8–§9.
+
+---
+
 ## Contents
 
 1. [Overview](#1-overview)

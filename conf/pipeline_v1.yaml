@@ -101,8 +101,11 @@ input:
 
 # Output configuration
 output:
-  type: "parquet"  # Options: "jsonl", "json", "csv", "parquet", "redis", "kafka", "s3"
-  path: "data/processed/"
+  # jsonl needs nothing beyond the standard library, so it is the default.
+  # "json" writes one file per document; "parquet" needs pyarrow installed.
+  type: "jsonl"    # Options: "jsonl", "json", "parquet"
+  path: "data/processed"
+  file: "records.jsonl"
   
   # Format-specific configurations
   parquet:
