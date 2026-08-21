@@ -199,7 +199,7 @@
     },
     "severity": {
       "type": "object",
-      "description": "Severity per claudenew.md 21.1 formula 3. s_i = confidence * severity_weight; accumulated over instances as 1 - exp(-n); disruption is the worst s_i * disruption_factor.",
+      "description": "Severity. s_i = confidence * severity_weight; accumulated over instances as 1 - exp(-n); disruption is the worst s_i * disruption_factor.",
       "required": [
         "per_category",
         "logical_flow_disruption",

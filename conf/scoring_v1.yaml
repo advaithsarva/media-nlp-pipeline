@@ -1,6 +1,6 @@
 # Scoring v1.
 #
-# Implements the formulas in claudenew.md 21.1 and 21.2 rather than inventing new ones.
+# Implements the formulas from the original system design rather than inventing new ones.
 # Where a formula had a genuine defect it is kept but made switchable, and the default is
 # the corrected form -- see prop_score_method below.
 #
@@ -10,7 +10,7 @@
 #   density = raw / (word_count ** beta)
 #   score   = 1 - exp(-lambda * density)
 #
-# Severity, per claudenew.md 21.1 formula 3:
+# Severity:
 #
 #   s_i         = c_i * w_f              confidence times the category's severity weight
 #   severity_f  = 1 - exp(-n_f)          document-level accumulation over n_f instances
@@ -18,7 +18,7 @@
 #   coherence   = 1 - disruption
 #
 # IMPORTANT: none of the composites below are calibrated. No labelled corpus has been used,
-# so the weights are the design document's suggestions, not fitted values. They are computed
+# so the weights are informed guesses, not fitted values. They are computed
 # and always shipped with their full breakdown, and `expose_composite` decides whether they
 # reach the output at all. Default off.
 
@@ -28,7 +28,7 @@ scoring:
   # --- per-category score -------------------------------------------------------------
 
   # How sharply evidence density turns into a score. Hand-chosen. This is exactly the kind
-  # of number the research track (claudenew.md F2) is meant to fit rather than guess.
+  # of number that should be fitted against a labelled corpus rather than guessed.
   lambda: 4.0
 
   # Length normalisation exponent.
@@ -48,7 +48,7 @@ scoring:
   # a labelled evaluation set -- otherwise the number looks authoritative and is not.
   expose_composite: false
 
-  # PropScore aggregation. claudenew.md 21.1 formula 4 specifies noisy_or:
+  # PropScore aggregation. The original design specifies noisy_or:
   #     PropScore = 1 - prod(1 - v_p)
   # That form assumes the techniques are statistically independent. They are not -- loaded
   # language, name-calling and fear appeals co-occur heavily -- so with a dozen techniques
@@ -60,17 +60,17 @@ scoring:
   prop_score_method: "smooth_max"    # Options: "smooth_max", "noisy_or"
   prop_score_gamma: 4.0
 
-  # alpha in claudenew.md 21.1 formula 2: conf = alpha*rules + (1-alpha)*ml.
+  # Rule/ML balance: conf = alpha*rules + (1-alpha)*ml.
   # 1.0 means pure rules. There is no ML classifier yet, so any other value would be a lie.
   alpha: 1.0
 
-  # Frequency contribution to a technique's transparency violation (claudenew.md 13.1).
+  # Frequency contribution to a technique's transparency violation.
   frequency_alpha: 0.3
 
-# Per-category multipliers for the article-level score, claudenew.md 21.1 formula 1:
+# Per-category multipliers for the article-level score:
 #   score_article = sum over categories of ( w_c * s_c )
 # All 1.0 except hedging. Any other value would be invented, and hedging is explicitly not
-# a fault -- 13.2 gives it weight 0.05 or excludes it entirely.
+# a fault, so it is weighted down to almost nothing.
 category_weights:
   loaded_language: 1.0
   name_calling: 1.0
@@ -94,7 +94,7 @@ category_weights:
   statistical_manipulation: 1.0
   hedging: 0.05
 
-# The per-signal additive scheme from claudenew.md 21.2 -- the most transparent of the
+# The per-signal additive scheme -- the most transparent of the
 # composites, because the total is literally the sum of a visible list. Clipped at 1.0.
 # Bands: 0-0.3 low, 0.3-0.7 moderate, 0.7-1.0 high.
 additive_increments:
@@ -129,8 +129,9 @@ composite_families:
   # Style is measured and reported but never counted as manipulation.
   excluded: [style]
 
-# Band edges used to turn a composite into a word. Two different scales exist in
-# claudenew.md 21.2 -- these are the manipulation bands (0-0.3 / 0.3-0.7 / 0.7-1).
+# Band edges used to turn a composite into a word: 0-0.3 low, 0.3-0.7 moderate,
+# 0.7-1 high. Note these are the manipulation bands; other scales in the literature
+# use slightly different cut points, so do not mix them.
 bands:
   low: 0.3
   moderate: 0.7

@@ -61,7 +61,7 @@ def test_no_composite_is_exposed(engine, scorer, build_doc):
     assert all(not s.calibrated for s in scored.category_scores.values())
 
 
-# ---- severity, disruption and the composites (claudenew.md 12.4, 21.1, 21.2) ----
+# ---- severity, disruption and the composites ----
 
 def test_severity_uses_the_category_weight(engine, scorer, build_doc, taxonomy):
     """s_i = confidence * severity_weight, per instance."""

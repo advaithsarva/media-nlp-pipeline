@@ -7,7 +7,7 @@ Two detectors need this and could not be built without it:
   card_stacking  one side described warmly and the other coldly -- you cannot compare
                  sentiment per side without knowing which side each sentence is about
 
-Both are specified in claudenew.md 13.2 and were parked until now for exactly this reason.
+Both were in the original design and stayed unbuilt for exactly this reason.
 
 Two libraries, both chosen because they are reproducible:
 

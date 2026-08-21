@@ -1,7 +1,7 @@
 # Taxonomy v1.
 #
-# Every category here comes from claudenew.md 12.2 (the fallacy set) and 13.2 (the
-# propaganda techniques). What is NOT here is just as deliberate: strawman, red herring,
+# The categories cover the classical fallacy set and the standard propaganda techniques.
+# What is NOT here is just as deliberate: strawman, red herring,
 # cherry picking, equivocation, omission bias, conflict of interest, coherence drop,
 # framing bias and narrative inconsistency all need something this pipeline does not have
 # -- an NLI model, sentence embeddings, other articles to compare against, or an external
@@ -10,7 +10,7 @@
 #
 # Two more are parked for a smaller reason: scapegoating and card stacking need named
 # entity recognition and per-entity sentiment. They become buildable the day spaCy is
-# added, and the design for both is written up in claudenew.md 13.2.
+# added, and both are now implemented at the bottom of this file.
 #
 # Every match must be an exact substring of the article with real character offsets, so
 # detectors are lexicons, regexes or counts over the raw text -- never anything that
@@ -20,13 +20,13 @@
 #   detector         lexicon | regex | regex_unless | cooccurrence | repetition
 #   base_confidence  how much to trust a hit from this detector, 0-1
 #   family           fallacy | propaganda | bias | style
-#   severity_weight  w_f in claudenew.md 21.1 formula 3: how badly this misleads
+#   severity_weight  how badly this move misleads, 0-1 (w_f in the severity formula)
 #   disruption       d_f in the same formula: how much it breaks the argument's logic
 
 taxonomy:
   version: "1.1.0"
-  # A category below this confidence never emits. 0.8, not 0.5: claudenew.md 12.4 offers
-  # both, and this is the precision end. Better to report nothing than to report wrongly.
+  # A category below this confidence never emits. 0.8 rather than 0.5: this is the
+  # precision end of the range. Better to report nothing than to report wrongly.
   default_threshold: 0.8
 
 categories:
@@ -206,7 +206,7 @@ categories:
     description: >
       Language that makes the reader doubt their own perception. Flagged even when the
       article is quoting someone else using it -- the aim is to record that the tactic is
-      present in the content, whoever is deploying it (claudenew.md 13.2).
+      present in the content, whoever is deploying it.
     detector: regex
     base_confidence: 0.9
     severity_weight: 0.9
@@ -244,9 +244,9 @@ categories:
     description: >
       Treating wide agreement as proof. Matched as phrases rather than single words,
       because the signal is the construction ("everyone knows"), not the word "everyone".
-      claudenew.md 12.2 suggests a bare lexicon of {everyone, most people, the majority};
-      that fires constantly on ordinary prose, so the dependency context it recommends as
-      an "enhancement" is baked into the patterns instead.
+      The textbook version of this rule is a bare lexicon of {everyone, most people, the
+      majority}; that fires constantly on ordinary prose, so the grammatical context it
+      needs is baked into the patterns instead.
     detector: regex
     base_confidence: 0.9
     severity_weight: 0.5
@@ -362,8 +362,8 @@ categories:
     name: "Unsupported Quantifier"
     family: fallacy
     description: >
-      A vague quantity claim with nothing behind it. This is the claudenew.md 13.2 rule
-      implemented as designed: flag "many / most / countless / numerous" only when the
+      A vague quantity claim with nothing behind it: flag "many / most / countless /
+      numerous" only when the
       sentence contains no number, percentage, study or attribution. "Many (37%) of
       respondents" is correctly left alone; "many people are saying" is not.
     detector: regex_unless
@@ -412,9 +412,9 @@ categories:
     description: >
       A claim attributed to someone the reader cannot check. "Officials said" is excluded
       because it is standard sourced reporting; the target is attribution with no
-      identifiable source behind it at all. claudenew.md 13.2 defines the metric as opaque
-      references outnumbering named ones; here each opaque reference is reported
-      individually so the evidence stays quotable.
+      identifiable source behind it at all. The usual formulation of this metric counts
+      opaque references against named ones; here each opaque reference is reported
+      individually instead, so the evidence stays quotable.
     detector: regex
     base_confidence: 0.85
     severity_weight: 0.6
@@ -455,8 +455,8 @@ categories:
     name: "Repetition"
     family: propaganda
     description: >
-      The same phrase driven home again and again. claudenew.md 13.2 specifies counting
-      n-grams across the document and flagging anything that appears three times or more.
+      The same phrase driven home again and again, found by counting n-grams across the
+      document and flagging anything that appears often enough.
       Phrases made entirely of stopwords ("of the people in") are skipped by the engine,
       as are phrases containing a named entity -- validation against Wikipedia showed that
       one dominating everything else, because an encyclopaedia article necessarily repeats
@@ -476,8 +476,8 @@ categories:
     description: >
       Softening language -- may, might, could, suggests. Tracked because it changes how
       certain a claim reads, but explicitly NOT a fault: hedging is often a sign of honest
-      journalism. claudenew.md 13.2 gives it weight 0.05 or excludes it, so its severity
-      weight is near zero and it never contributes to a manipulation score.
+      journalism. Its severity weight is therefore near zero and it never contributes to
+      a manipulation score.
     detector: lexicon
     base_confidence: 0.8
     severity_weight: 0.05
@@ -502,7 +502,7 @@ categories:
     family: propaganda
     description: >
       One group blamed again and again, usually for several unrelated problems.
-      claudenew.md 13.2 gives the shape: for each ORG, NORP or GPE entity, count the
+      The standard formulation: for each ORG, NORP or GPE entity, count the
       sentences that also carry a blame phrase, and flag when the same target is blamed in
       two or more separate sentences. Distinct sentences, not mentions -- naming a group
       three times in one sentence is one accusation.
@@ -561,7 +561,7 @@ categories:
     family: bias
     description: >
       Only the favourable side presented -- one party described warmly throughout, the
-      other coldly. claudenew.md 13.2: build an entity-sentiment map and flag when the
+      other coldly. Build an entity-sentiment map and flag when the
       warmest entity is above +0.5 and the coldest below -0.5. Both ends have to be
       extreme; an article that is warm about everybody is not stacking the deck.
       min_mentions guards the obvious failure, where one passing mention inside one emotive

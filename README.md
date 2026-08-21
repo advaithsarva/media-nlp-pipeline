@@ -45,25 +45,26 @@ Add `--save` to store the record where `output.type` in `conf/pipeline_v1.yaml` 
 | Preprocessing | Working. Tokenises with true character offsets and never rewrites the text. |
 | Segmentation | Working. pysbd, paragraph-first, exact offsets, handles hard-wrapped plain text. |
 | Entities | spaCy `en_core_web_sm` NER plus VADER per-entity sentiment, loaded lazily — only when a detector needs it. |
-| Detection | **23 categories** from `claudenew.md` §12.2/§13.2, across 7 detector kinds (lexicon, regex, regex-unless, co-occurrence, document-level repetition, entity-blame, entity-sentiment-split). Precision-first; every category has a passing false-positive test against neutral text and against properly-sourced writing. |
-| Scoring | Per-category scores, the severity/disruption model (§12.4) and six composites (§21). **No composite headline number is published** — the detectors are not calibrated, so `composite` is `null` and `expose_composite` defaults to false. The breakdowns are always published. |
+| Detection | **23 categories** — logical fallacies, propaganda techniques, sourcing and framing bias — across 7 detector kinds (lexicon, regex, regex-unless, co-occurrence, document-level repetition, entity-blame, entity-sentiment-split). Precision-first; every category has a passing false-positive test against neutral text and against properly-sourced writing. |
+| Scoring | Per-category scores, a severity/logical-disruption model, and six composites. **No composite headline number is published** — the detectors are not calibrated, so `composite` is `null` and `expose_composite` defaults to false. The breakdowns are always published. |
 | Batch | `classify_batch` (single process) and `preprocess_ray` (distributed) — tested to produce identical output. A Spark job and an Airflow DAG are written but need a JVM and Linux respectively. |
 | Evaluation | `python -m evaluation.evaluator` gives per-detector precision/recall/F1 and a verbatim-grounding rate over `eval/gold/annotations.jsonl`. |
 | Output | `data_schema/output_schema.json`, validated on every run. Contains no timestamp, by design. |
 | Storage | JSONL and per-document JSON work with no extra dependencies; Parquet needs `pyarrow`. |
 | API | `/health`, `/analyze`, `/analyze/batch` on FastAPI. |
-| Not built | feature layers, ML classifier, hybrid router, embeddings, FAISS, ontology graph, the non-file ingestion adapters, the C++/CUDA accelerators. Nine detector categories are parked because they need NLI, embeddings, other articles or an external knowledge base — listed with reasons in `observe.md` §10.6. |
+| Not built | feature layers, ML classifier, hybrid router, embeddings, FAISS, ontology graph, the non-file ingestion adapters, the C++/CUDA accelerators. Nine detector categories are parked because they need NLI, embeddings, other articles or an external knowledge base; each is named with its reason in the header of `conf/taxonomy_v1.yaml`. |
 
 Scores are **uncalibrated**. No labelled evaluation set has been used, so the numbers describe how
 much evidence was found, not how biased a piece is. Determinism is an audit property: it proves a
 result can be re-derived, not that it is correct.
 
-**One result worth knowing about.** `claudenew.md` §21.1 gives PropScore as a noisy-OR,
+**One result worth knowing about.** The design this pipeline was built from specifies PropScore as a noisy-OR,
 `1 - prod(1 - v)`. That assumes propaganda techniques are statistically independent; they
 co-occur heavily, so the product saturates. On the sample article it returns **0.93**, where
-§13.1's own calibration target for an ordinary news article is 0.1-0.2. Both aggregators are
-implemented and `prop_score_method` selects; the default is a smooth-max, which returns 0.48 on
-the same evidence. See `observe.md` §10.4.
+that same design's stated calibration target for an ordinary news article is 0.1-0.2. Both
+aggregators are implemented and `prop_score_method` selects between them; the default is a
+smooth-max, which returns 0.48 on the same evidence. The reasoning is written out in
+`conf/scoring_v1.yaml`, and `tests/test_scoring_engine.py` asserts the gap.
 
 ## Measured on real published text
 
@@ -109,7 +110,8 @@ this task is F1 0.4-0.6.
 PYTHONPATH=src .venv\Scripts\python.exe -m evaluation.evaluator --report eval/report.md
 ```
 
-Line-by-line notes on every module live in `observe.md` §8-§11.
+Every module carries a docstring explaining what it does and why it is built that way; the
+config files in `conf/` document each threshold and the evidence behind it.
 
 ---
 

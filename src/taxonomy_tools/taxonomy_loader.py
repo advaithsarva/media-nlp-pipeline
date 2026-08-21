@@ -40,9 +40,9 @@ class Category:
     description: str = ""
     # what the category belongs to: "fallacy", "propaganda", "bias" or "style"
     family: str = "propaganda"
-    # how severely this move misleads, 0-1. Used by the severity formula (claudenew 12.4).
+    # how severely this move misleads, 0-1. Used by the severity formula.
     severity_weight: float = 0.5
-    # how much it breaks the argument's logical flow, 0-1 (claudenew 21.1 formula 3).
+    # how much it breaks the argument's logical flow, 0-1.
     disruption: float = 0.3
     terms: List[str] = field(default_factory=list)
     patterns: List[str] = field(default_factory=list)

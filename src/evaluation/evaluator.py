@@ -173,8 +173,8 @@ def to_markdown(results, gold_path):
     lines.append("> the detectors were written by the same person, so this measures whether")
     lines.append("> each detector does what it was specified to do -- not whether the")
     lines.append("> specification matches how a reader would judge the article. Quoting any")
-    lines.append("> number here as accuracy would be wrong. See `observe.md` for what an")
-    lines.append("> independent evaluation would need.")
+    lines.append("> number here as accuracy would be wrong. An independent figure needs")
+    lines.append("> annotations somebody else made -- see the module docstring.")
     lines.append("")
 
     micro = results["micro"]

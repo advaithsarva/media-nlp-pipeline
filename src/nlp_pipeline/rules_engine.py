@@ -262,7 +262,7 @@ class RuleEngine:
     def _scan_entity_blame(self, doc, rule):
         """Scapegoating: the same group blamed in several separate sentences.
 
-        claudenew.md 13.2 gives the shape -- for each ORG/NORP/GPE entity, count the
+        The original design gives the shape -- for each ORG/NORP/GPE entity, count the
         sentences that also contain a blame phrase, and flag when the count reaches two.
         The threshold is deliberately about *distinct sentences*, not mentions: a single
         sentence naming a group three times is one accusation, not three.
@@ -315,7 +315,7 @@ class RuleEngine:
     def _scan_entity_sentiment_split(self, doc, rule):
         """Card stacking: one side described warmly, the other coldly.
 
-        claudenew.md 13.2: build an entity-sentiment map and flag when the most positively
+        The original design: build an entity-sentiment map and flag when the most positively
         described entity is above +0.5 and the most negative below -0.5. Both ends must be
         extreme -- an article that is warm about everyone is not stacking the deck.
 

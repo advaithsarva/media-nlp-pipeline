@@ -5,7 +5,7 @@ quoted. Nothing here looks at the text again -- it sees the spans and the config
 nothing else. That is what makes every number reconstructible: anyone holding the output
 can recompute it by hand from the findings list and get the same answer.
 
-Formulas are claudenew.md 21.1 and 21.2, implemented rather than reinvented:
+The formulas come from the original system design, implemented rather than reinvented:
 
   1  score_article = sum( w_c * s_c )              per-category weighted sum
   2  conf = alpha*rules + (1-alpha)*ml             alpha is 1.0; there is no ML yet
@@ -131,7 +131,7 @@ class ScoringEngine:
             "coherence": self._round(1.0 - worst_disruption),
         }
 
-    # ---------- composites (21.2) ----------
+    # ---------- composites ----------
 
     def _prop_score(self, category_scores):
         """Formula 4, both ways. Returns the value and everything needed to check it."""
@@ -161,7 +161,7 @@ class ScoringEngine:
         }
 
     def _additive_manipulation(self, category_scores):
-        """The 21.2 increment table: a fixed amount per signal present, clipped at 1.0.
+        """A fixed amount per signal present, clipped at 1.0.
 
         The least clever composite here and by some way the most defensible, because the
         total is literally the sum of a list the reader can see.
@@ -200,7 +200,7 @@ class ScoringEngine:
         bias = self._family_score(category_scores, "bias_signal")
         additive = self._additive_manipulation(category_scores)
 
-        # ManipulationIndex, 21.2. Three inputs, so the independence problem is far milder
+        # ManipulationIndex. Three inputs, so the independence problem is far milder
         # than with thirteen -- but it is still a noisy-OR, so it is labelled as such.
         parts = [prop["value"], fallacy["value"], bias["value"]]
         product = 1.0
@@ -208,7 +208,7 @@ class ScoringEngine:
             product *= (1.0 - p)
         manipulation = 1.0 - product
 
-        # article-level weighted sum, 21.1 formula 1, normalised by the weights used
+        # article-level weighted sum, normalised by the weights used
         weight_total = sum(float(self.weights.get(c.id, 1.0)) for c in self.taxonomy.categories)
         article = sum(
             float(self.weights.get(c.id, 1.0)) * category_scores[c.id].score
@@ -220,8 +220,8 @@ class ScoringEngine:
             "calibrated": False,
             "warning": (
                 "Uncalibrated. No labelled evaluation set has been used, so these weights "
-                "are the design document's suggestions, not fitted values. Read the "
-                "breakdowns, not the totals."
+                "are informed guesses rather than fitted values. Read the breakdowns, "
+                "not the totals."
             ),
             "prop_score": prop,
             "fallacy_score": fallacy,

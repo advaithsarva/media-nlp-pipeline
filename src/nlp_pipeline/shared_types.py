@@ -64,7 +64,7 @@ class NormalizedDocument:
         return sum(1 for t in self.tokens if not t.is_punct)
 
 
-# Evidence is a first-class object, not a string bolted onto a result (R4).
+# Evidence is a first-class object, not a string bolted onto a result.
 # Same slice invariant as Sentence. `rule_id` is what makes a score traceable
 # back to the exact rule that produced it.
 @dataclass(frozen=True)
@@ -104,7 +104,7 @@ class CategoryScore:
     count: int          # how many evidence spans fired
     raw: float          # sum of the confidences of those spans
     score: float        # raw, length-normalised into 0..1
-    calibrated: bool = False   # always False until a labelled eval set exists (R3)
+    calibrated: bool = False   # always False until a labelled evaluation set exists
 
 
 @dataclass
@@ -115,7 +115,7 @@ class ScoredDocument:
     # The single headline number. Stays None unless expose_composite is turned on,
     # because the detectors underneath it have not been measured yet.
     composite: Optional[float] = None
-    # Severity, accumulation and logical-flow disruption (claudenew.md 12.4 / 21.1).
+    # Severity, accumulation and logical-flow disruption.
     severity: Dict[str, Any] = field(default_factory=dict)
     # Every composite plus the breakdown that produced it. Always computed, so it can be
     # inspected, and published only when expose_composite says so.
