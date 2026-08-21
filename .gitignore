@@ -42,3 +42,13 @@ Thumbs.db
 # Misc
 tree.txt
 *.exe
+
+# Local venv
+.venv/
+
+# Generated tree listing
+tree.txt
+
+# Pipeline output
+data/processed/
+jsonl_output/

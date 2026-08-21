@@ -1,43 +1,31 @@
 import os
+import csv
 import json
 import hashlib
+import mimetypes
+import zipfile
+import tarfile
+import gzip
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 from abc import ABC, abstractmethod
 
-# Core libraries
 import charset_normalizer
-import magic
 
-# File-specific processors
-import pdfplumber
-import fitz  # PyMuPDF
-from docx import Document
-from bs4 import BeautifulSoup
-import markdown as md
-import pandas as pd
-import csv
-from PIL import Image
-import pytesseract
-
-# Database
-import sqlalchemy
-from pymongo import MongoClient
-
-# Compression
-import zipfile
-import tarfile
-import gzip
+# Everything below this line is imported inside the reader that needs it, not here.
+# pdfplumber, python-docx, beautifulsoup4, pandas and the rest are each ~50MB of
+# dependency and only one reader ever touches each of them -- importing them at module
+# level means a plain .txt file cannot be read without installing all of it.
 
 
 class BaseReader(ABC):
     """Base class for all file readers"""
     
     def __init__(self, output_dir: str = "./jsonl_output"):
+        # Remembered, not created. Making a directory just because a reader was
+        # constructed litters the working folder even when nothing is ever written.
         self.output_dir = Path(output_dir)
-        self.output_dir.mkdir(parents=True, exist_ok=True)
-        self.mime_detector = magic.Magic(mime=True)
     
     def detect_encoding(self, file_path: str) -> str:
         """Detect file encoding with fallback"""
@@ -79,7 +67,7 @@ class BaseReader(ABC):
             'file_name': path.name,
             'file_size_bytes': stat.st_size,
             'file_extension': path.suffix.lower(),
-            'mime_type': self.mime_detector.from_file(str(path)),
+            'mime_type': mimetypes.guess_type(path.name)[0] or 'application/octet-stream',
             'file_hash_sha256': self.calculate_hash(file_path),
             'created_timestamp': datetime.fromtimestamp(stat.st_ctime).isoformat(),
             'modified_timestamp': datetime.fromtimestamp(stat.st_mtime).isoformat(),
@@ -89,8 +77,9 @@ class BaseReader(ABC):
     
     def write_to_jsonl(self, data: Dict[str, Any], output_file: str):
         """Write single record to JSONL"""
+        self.output_dir.mkdir(parents=True, exist_ok=True)
         output_path = self.output_dir / output_file
-        
+
         with open(output_path, 'a', encoding='utf-8') as f:
             f.write(json.dumps(data, ensure_ascii=False) + '\n')
     
@@ -200,6 +189,8 @@ class MarkdownReader(BaseReader):
             raw_markdown = f.read()
         
         # Convert to HTML for structure analysis
+        import markdown as md
+        from bs4 import BeautifulSoup
         html_content = md.markdown(raw_markdown, extensions=['extra', 'codehilite', 'toc'])
         soup = BeautifulSoup(html_content, 'html.parser')
         
@@ -264,6 +255,7 @@ class PDFReader(BaseReader):
         images_info = []
         
         try:
+            import pdfplumber
             with pdfplumber.open(file_path) as pdf:
                 pdf_metadata = pdf.metadata or {}
                 
@@ -303,6 +295,7 @@ class PDFReader(BaseReader):
         # Fallback to PyMuPDF if text is empty
         if not ''.join(text_content).strip():
             try:
+                import fitz  # PyMuPDF
                 doc = fitz.open(file_path)
                 text_content = [page.get_text() for page in doc]
                 doc.close()
@@ -356,6 +349,7 @@ class DocsReader(BaseReader):
                 'supported_format': False
             }
         
+        from docx import Document
         doc = Document(file_path)
         
         # Extract paragraphs with styles
@@ -450,6 +444,7 @@ class CSVReader(BaseReader):
         
         # Read with pandas for robust parsing
         try:
+            import pandas as pd
             df = pd.read_csv(file_path, encoding=encoding, delimiter=delimiter)
             
             # Get column info
@@ -632,6 +627,7 @@ class HTMLReader(BaseReader):
         with open(file_path, 'r', encoding=encoding, errors='replace') as f:
             raw_html = f.read()
         
+        from bs4 import BeautifulSoup
         soup = BeautifulSoup(raw_html, 'lxml')
         
         # Extract metadata tags
@@ -725,6 +721,7 @@ class XMLReader(BaseReader):
         with open(file_path, 'r', encoding=encoding, errors='replace') as f:
             raw_xml = f.read()
         
+        from bs4 import BeautifulSoup
         soup = BeautifulSoup(raw_xml, 'lxml-xml')
         
         # Extract root element
@@ -784,6 +781,8 @@ class SQLReader(BaseReader):
             'reader_class': self.__class__.__name__
         }
         
+        import sqlalchemy
+        import pandas as pd
         engine = sqlalchemy.create_engine(connection_string)
         
         # If table_name provided, read entire table
@@ -829,19 +828,22 @@ class SQLReader(BaseReader):
         records = df.to_dict('records')
         
         return
-# class AudioReader:
-#     def __init__(self):
-#         pass
+class AudioReader:
+    def __init__(self):
+        pass
                
-# class ParquetReader:
-#     def __init__(self):
-#         pass
+class ParquetReader:
+    def __init__(self):
+        pass
 
-# class HadhoopReader:
-#     def __init__(self):
-#         pass
+class HadhoopReader:
+    def __init__(self):
+        pass
 
-# class ArchiveReader:
-#     def __init__(self):
-#         pass
+class ArchiveReader:
+    def __init__(self):
+        pass
 
+class ImageReader:
+    def __init__(self):
+        pass

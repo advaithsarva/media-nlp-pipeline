@@ -109,6 +109,7 @@ class InternalDocument:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'InternalDocument':
         """Create from dictionary"""
+        data=dict(data)
         data['source_type'] = SourceType(data['source_type'])
         data['processing_status'] = ProcessingStatus(data['processing_status'])
         return cls(**data)

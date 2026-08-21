@@ -1,0 +1,119 @@
+# Taxonomy v1 -- deliberately small.
+#
+# Five categories, not twenty-eight. Each one has to be detectable from the text alone
+# with high precision; anything needing outside knowledge (strawman, cherry picking,
+# conflict of interest) is parked, not attempted badly.
+#
+# Every match must be an exact substring of the article with real character offsets,
+# so detectors are written as lexicons or regexes over the raw text -- never as
+# something that paraphrases.
+
+taxonomy:
+  version: "1.0.0"
+  # A match below this confidence is dropped. 0.8, not 0.5: it is better to report
+  # nothing than to report wrongly.
+  default_threshold: 0.8
+
+categories:
+
+  - id: loaded_language
+    name: "Loaded Language"
+    description: >
+      Emotionally charged wording used where a neutral equivalent exists. Reports the
+      charged word itself as evidence. Words that also appear in plain factual reporting
+      (devastating, brutal, radical) are left out on purpose.
+    detector: lexicon
+    base_confidence: 0.85
+    terms:
+      - disastrous
+      - disgraceful
+      - shameful
+      - outrageous
+      - appalling
+      - egregious
+      - despicable
+      - monstrous
+      - sinister
+      - vile
+      - atrocious
+      - deplorable
+      - abhorrent
+      - reprehensible
+      - scandalous
+      - unconscionable
+      - laughable
+      - ludicrous
+      - pathetic
+      - shameless
+
+  - id: name_calling
+    name: "Name-Calling / Labelling"
+    description: >
+      An insulting label attached to a person or group in place of an argument. Terms
+      with common literal meanings (clown, snake, rat, puppet) are excluded -- they fire
+      on ordinary prose.
+    detector: lexicon
+    base_confidence: 0.85
+    terms:
+      - liar
+      - crook
+      - thug
+      - traitor
+      - coward
+      - hypocrite
+      - charlatan
+      - demagogue
+      - buffoon
+      - stooge
+      - lunatic
+      - madman
+      - zealot
+      - bigot
+      - grifter
+      - conman
+      - warmonger
+
+  - id: bandwagon
+    name: "Bandwagon / Appeal to Popularity"
+    description: >
+      Treating wide agreement as proof. Matched as phrases rather than single words,
+      because the signal is the construction ("everyone knows"), not the word "everyone".
+    detector: regex
+    base_confidence: 0.9
+    patterns:
+      - '\b(?:everyone|everybody|no one|nobody)\s+(?:knows|agrees|believes|thinks|denies|doubts)\b'
+      - '\b(?:we|they)\s+all\s+(?:know|agree|understand)\b'
+      - '\bthe\s+(?:vast\s+)?majority\s+of\s+(?:people|voters|citizens|americans)\s+(?:know|agree|believe)\b'
+      - '\bjoin\s+the\s+(?:millions|thousands)\b'
+      - '\beveryone\s+is\s+(?:saying|talking\s+about)\b'
+
+  - id: unsupported_quantifier
+    name: "Unsupported Quantifier"
+    description: >
+      An absolute claim (all, never, without exception) presented with no supporting
+      figure or source. Narrowed to explicit absolutes so that ordinary uses of "all"
+      and "every" do not fire.
+    detector: regex
+    base_confidence: 0.8
+    patterns:
+      - '\b(?:literally|absolutely|completely|totally)\s+(?:everyone|no\s+one|nobody|everything|nothing)\b'
+      - '\b(?:every\s+single|each\s+and\s+every)\s+\w+\b'
+      - '\bwithout\s+(?:a\s+)?(?:single\s+)?exception\b'
+      - '\b(?:all|every)\s+(?:experts|scientists|economists|doctors|analysts)\s+agree\b'
+      - '\bno\s+(?:serious|credible|reasonable)\s+(?:person|expert|observer)\s+(?:would|could|can)\b'
+
+  - id: source_opaqueness
+    name: "Source Opaqueness"
+    description: >
+      A claim attributed to someone the reader cannot check. "Officials said" is left out
+      because it is standard sourced reporting; the target is attribution with no
+      identifiable source behind it at all.
+    detector: regex
+    base_confidence: 0.85
+    patterns:
+      - '\b(?:sources?|insiders?|observers?|critics)\s+(?:say|says|said|claim|claims|claimed|suggest|suggests|believe|believes|told)\b'
+      - '\b(?:reports?|rumou?rs?)\s+(?:indicate|indicates|suggest|suggests|say|claim)\b'
+      - '\bit\s+is\s+(?:widely\s+)?(?:known|believed|said|understood|rumou?red)\s+that\b'
+      - '\b(?:many|some|most)\s+(?:people|experts|analysts|observers|critics)\s+(?:say|believe|think|argue|feel)\b'
+      - '\baccording\s+to\s+(?:sources|insiders|people\s+familiar)\b'
+      - '\bstudies\s+(?:show|shows|suggest|suggests|prove)\b'

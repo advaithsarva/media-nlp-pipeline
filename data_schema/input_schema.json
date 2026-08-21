@@ -1,1 +1,16 @@
-{"//Contract for what the API/batch expects as input: fields like id, text, metadata, etc. Backend & QA will rely on this.": "Comment"}
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/nlppipeline/input_schema.json",
+  "title": "Pushed document payload",
+  "description": "What a caller may hand to InputRouter.route_push_input as a dict. File paths and raw strings are accepted too and do not go through this schema.",
+  "type": "object",
+  "required": ["text"],
+  "properties": {
+    "text": { "type": "string", "minLength": 1 },
+    "title": { "type": ["string", "null"] },
+    "author": { "type": ["string", "null"] },
+    "language": { "type": ["string", "null"] },
+    "source_type": { "type": ["string", "null"] },
+    "metadata": { "type": "object" }
+  }
+}

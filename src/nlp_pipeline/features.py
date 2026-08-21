@@ -18,9 +18,9 @@ class LogicalFallacy:
     pass
 class Rhetorical:
     pass
-class Bais:
+class Bias:
     pass
-class Sentiment_Subjecivity:
+class Sentiment_Subjectivity:
     pass
 class Stance:
     pass

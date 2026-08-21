@@ -1,6 +1,6 @@
 #ML-based classifier (scikit-learn, etc.) as an optional component.
 import numpy as np
-from sklearn.externals import joblib
+import joblib
 import onnxruntime as ort
 
 from typing import Dict, Any

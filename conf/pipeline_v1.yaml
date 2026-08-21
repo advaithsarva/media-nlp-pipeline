@@ -16,7 +16,7 @@ pipeline:
     - "embeddings"
     - "postprocessing"
     - "output"
-  seed: #idk
+  seed: 42 #an interger eg 42 
 input:
   mode: "pull"  # Options: "pull" or "push"
   

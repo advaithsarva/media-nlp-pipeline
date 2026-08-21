@@ -1,0 +1,43 @@
+# Scoring v1.
+#
+# One score per category and nothing else. No BiasScore, no ManipulationIndex, no single
+# headline number -- those need weights fitted against a labelled corpus, and no such
+# corpus exists yet. Publishing a composite now would look authoritative while being
+# arbitrary.
+#
+# The formula, in words: add up the confidences of the evidence found for a category,
+# divide by document length so a long article is not penalised for being long, then
+# squash the result into 0..1.
+#
+#   raw     = sum of the confidences of that category's evidence spans
+#   density = raw / (word_count ** beta)
+#   score   = 1 - exp(-lambda * density)
+
+scoring:
+  version: "1.0.0"
+
+  # How sharply density turns into a score. Higher lambda = the same evidence scores
+  # higher. Chosen by hand; this is exactly the kind of number the research track is
+  # meant to fit rather than guess.
+  lambda: 4.0
+
+  # Length normalisation exponent.
+  #   beta = 0 -> raw count, long articles always score higher
+  #   beta = 1 -> pure density, one loaded word in a short article dominates
+  #   beta = 0.5 -> between the two
+  beta: 0.5
+
+  # Round scores before writing them out so two runs are byte-identical rather than
+  # differing in the last floating-point digit.
+  round_places: 6
+
+  # Stays false until the detectors underneath have measured precision (R3).
+  expose_composite: false
+
+# Per-category multipliers. All 1.0 on purpose: any other value would be invented.
+category_weights:
+  loaded_language: 1.0
+  name_calling: 1.0
+  bandwagon: 1.0
+  unsupported_quantifier: 1.0
+  source_opaqueness: 1.0
