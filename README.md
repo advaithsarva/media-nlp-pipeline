@@ -13,13 +13,14 @@ is built, tested and working as of **2026-08-21**.
 
 **Working end to end:** a document goes in, a schema-validated JSON report comes out, every
 finding is a verbatim substring of the source at the character offsets given, and two runs
-produce byte-identical bytes. 61 tests pass.
+produce byte-identical bytes. 125 tests pass.
 
 ```
 git clone <this repo> && cd NLPpipline
 py -3.10 -m venv .venv
 .venv\Scripts\python.exe -m pip install pyyaml pysbd jsonschema numpy pytest charset-normalizer
-.venv\Scripts\python.exe src\main.py --input dataaw\sample_article.txt
+.venv\Scripts\python.exe src\main.py --input data
+aw\sample_article.txt
 .venv\Scripts\python.exe -m pytest
 ```
 
@@ -37,18 +38,26 @@ Add `--save` to store the record where `output.type` in `conf/pipeline_v1.yaml` 
 | Ingestion | `.txt` proven end to end. `.md .pdf .docx .csv .tsv .json .jsonl .html .htm .xml` are wired into `EXTENSION_MAP` and import cleanly, but each needs its own library installed (`pdfplumber`, `python-docx`, `beautifulsoup4`, `pandas`) and none has been exercised. |
 | Preprocessing | Working. Tokenises with true character offsets and never rewrites the text. |
 | Segmentation | Working. pysbd, paragraph-first, exact offsets, handles hard-wrapped plain text. |
-| Detection | 5 categories: loaded language, name-calling, bandwagon, unsupported quantifier, source opaqueness. Precision-first; each has a passing false-positive test against neutral text. |
-| Scoring | One score per category. **No composite headline number** — the detectors are not calibrated, so publishing one would be misleading. |
+| Detection | **21 categories** from `claudenew.md` §12.2/§13.2, across 5 detector kinds (lexicon, regex, regex-unless, co-occurrence, document-level repetition). Precision-first; every category has a passing false-positive test against neutral text and against properly-sourced writing. |
+| Scoring | Per-category scores, the severity/disruption model (§12.4) and six composites (§21). **No composite headline number is published** — the detectors are not calibrated, so `composite` is `null` and `expose_composite` defaults to false. The breakdowns are always published. |
+| Batch | `classify_batch` (single process) and `preprocess_ray` (distributed) — tested to produce identical output. A Spark job and an Airflow DAG are written but need a JVM and Linux respectively. |
 | Output | `data_schema/output_schema.json`, validated on every run. Contains no timestamp, by design. |
 | Storage | JSONL and per-document JSON work with no extra dependencies; Parquet needs `pyarrow`. |
 | API | `/health`, `/analyze`, `/analyze/batch` on FastAPI. |
-| Not built | feature layers, ML classifier, hybrid router, embeddings, FAISS, ontology graph, Airflow, Spark/Ray, the non-file ingestion adapters, the C++/CUDA accelerators. |
+| Not built | feature layers, ML classifier, hybrid router, embeddings, FAISS, ontology graph, the non-file ingestion adapters, the C++/CUDA accelerators. Nine detector categories are parked because they need NLI, embeddings, other articles or an external knowledge base — listed with reasons in `observe.md` §10.6. |
 
 Scores are **uncalibrated**. No labelled evaluation set has been used, so the numbers describe how
 much evidence was found, not how biased a piece is. Determinism is an audit property: it proves a
 result can be re-derived, not that it is correct.
 
-Line-by-line notes on every module live in `observe.md` §8–§9.
+**One result worth knowing about.** `claudenew.md` §21.1 gives PropScore as a noisy-OR,
+`1 - prod(1 - v)`. That assumes propaganda techniques are statistically independent; they
+co-occur heavily, so the product saturates. On the sample article it returns **0.93**, where
+§13.1's own calibration target for an ordinary news article is 0.1-0.2. Both aggregators are
+implemented and `prop_score_method` selects; the default is a smooth-max, which returns 0.48 on
+the same evidence. See `observe.md` §10.4.
+
+Line-by-line notes on every module live in `observe.md` §8-§10.
 
 ---
 

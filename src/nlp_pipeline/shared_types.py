@@ -89,5 +89,11 @@ class ScoredDocument:
     document_id: str
     spans: List[EvidenceSpan] = field(default_factory=list)
     category_scores: Dict[str, CategoryScore] = field(default_factory=dict)
-    # No composite headline number until the detectors underneath it are measured (R3).
+    # The single headline number. Stays None unless expose_composite is turned on,
+    # because the detectors underneath it have not been measured yet.
     composite: Optional[float] = None
+    # Severity, accumulation and logical-flow disruption (claudenew.md 12.4 / 21.1).
+    severity: Dict[str, Any] = field(default_factory=dict)
+    # Every composite plus the breakdown that produced it. Always computed, so it can be
+    # inspected, and published only when expose_composite says so.
+    composites: Dict[str, Any] = field(default_factory=dict)

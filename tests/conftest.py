@@ -41,6 +41,36 @@ LOADED_TEXT = (
     "was ludicrous."
 )
 
+# One example per category, used to prove each detector can actually fire. Written as
+# separate snippets rather than one paragraph because several detectors need a specific
+# sentence shape, and a shared paragraph makes it unclear which text triggered what.
+CATEGORY_EXAMPLES = {
+    "loaded_language": "The policy was a disastrous and shameful retreat.",
+    "name_calling": "The minister is a liar and a charlatan.",
+    "glittering_generalities": "Freedom, justice and prosperity for every family!",
+    "appeal_to_fear": "This is an existential threat and we face annihilation.",
+    "whataboutism": "The audit found errors. What about the previous administration?",
+    "thought_terminating_cliche": "The scheme failed. It is what it is.",
+    "gaslighting": "You are imagining things and that never happened.",
+    "guilt_by_association": "The group has ties to terrorists, he argued.",
+    "bandwagon": "Everyone knows the plan will work.",
+    "false_dilemma": "There is no other choice; we have no choice but to sign.",
+    "no_true_scotsman": "No true patriot would question the budget.",
+    "burden_of_proof": "No one has ever proven the claim false, so prove me wrong.",
+    "motive_fallacy": "He only says this because he has a vested interest in the outcome.",
+    "slippery_slope": "This will inevitably lead to chaos and opens the floodgates.",
+    "anecdotal_evidence": "A friend of mine lost their job, which proves the policy failed.",
+    "unsupported_quantifier": "Many people are unhappy and every single voter agrees.",
+    "appeal_to_authority": "Experts say the measure is safe and research shows it works.",
+    "source_opaqueness": "Sources say the deal is done, and critics claim otherwise.",
+    "statistical_manipulation": "Support surged by 300% and hit a record high.",
+    "hedging": "The change may possibly reduce costs, which suggests a saving.",
+    "repetition": (
+        "We will take back control. The plan is sound. We will take back control of the "
+        "borders. Critics disagree. We will take back control, he said again."
+    ),
+}
+
 
 @pytest.fixture(scope="session")
 def configs():

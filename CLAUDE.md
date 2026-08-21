@@ -64,10 +64,13 @@ Five constraints that govern every design choice:
   `data_schema/output_schema.json`.
 - **Scalable** — batch via Airflow + Spark/Ray; real-time via API.
 
-**Status: Phases 0 and 1 complete (2026-08-21).** `python src/main.py --input article.txt` runs end to
+**Status: Phases 0, 1 and 2 complete (2026-08-21).** `python src/main.py --input article.txt` runs end to
 end, emits schema-valid JSON with verbatim evidence spans and true character offsets, and two
 consecutive runs are byte-identical. Results can be stored (JSONL/JSON/Parquet) and the pipeline
-is callable over HTTP (`/health`, `/analyze`, `/analyze/batch`). 61 tests pass. All five known bugs are fixed. Environment is
+is callable over HTTP (`/health`, `/analyze`, `/analyze/batch`). 21 detectors drawn from
+`claudenew.md` §12.2/§13.2, the severity model from §12.4 and scoring formulas 1-4 from §21 are
+implemented. Batch runs single-process or across Ray workers (both tested, byte-identical to each
+other); a Spark job and an Airflow DAG are written but unrunnable on Windows. 125 tests pass. All five known bugs are fixed. Environment is
 `.venv` on Python 3.10.10 with six packages.
 **Read `observe.md` §8 first** — it is the line-by-line build log for everything that now exists.
 Phases 1–3 are still unbuilt.
@@ -477,15 +480,29 @@ factory) · `api/service.py` + `api/models.py`.
 categories with no hierarchy, so there is no tree to walk yet; `features.py` Phase-1 layers —
 nothing consumes them until the ML classifier exists, which is Phase 2.
 
-### Phase 2 — only with a labelled evaluation set in hand
+### Phase 2 — partly done
 
-`ml_classifier.py` · `hybrid_router.py` · composite scoring per R3 · `feature_registry.py`
-gating · `argument_miner.py` · the Phase-2 feature layers.
+Done: the full detector set from `claudenew.md` §12.2/§13.2 (21 categories, 5 detector kinds) ·
+the severity/disruption model §12.4 · scoring formulas 1-4 from §21.1 and the §21.2 composites,
+all computed with their breakdowns and all behind `expose_composite` (default off, per R3).
 
-### Phase 3 — infrastructure, only if a real workload demands it
+**PropScore is implemented both ways.** §21.1 formula 4's noisy-OR is kept and selectable, but
+the default is a smooth-max, because the noisy-OR compounds correlated evidence: on the sample
+article it returns 0.93 where §13.1's own calibration target for ordinary news is 0.1-0.2. This
+is research item F1, now a runnable experiment (`observe.md` §10.4).
 
-Embeddings/FAISS · batch processing (Spark/Ray) · Airflow · the remaining ingestion adapters ·
-accelerators.
+**Still gated on a labelled evaluation set:** `ml_classifier.py` · `hybrid_router.py` ·
+`feature_registry.py` gating · `argument_miner.py` · the Phase-2 feature layers · turning
+`expose_composite` on.
+
+### Phase 3 — batch and orchestration done, the rest still frozen
+
+Done: `batch_processing/classify_batch.py` (single process) · `preprocess_ray.py` (tested, proven
+byte-identical to the single-process run) · `preprocess_spark.py` (written, needs a JVM) ·
+`airflow_dags/media_nlp_batch_dag.py` (written, needs Linux; a test enforces that it imports no
+NLP module).
+
+Still frozen: embeddings/FAISS · the non-file ingestion adapters · the C++/CUDA accelerators.
 
 **Discipline** (full version in `claudenew.md` §30): one module at a time, one class at a time,
 minimum code first, commit per file. Get the flow working before adding heavy logic.

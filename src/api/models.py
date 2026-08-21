@@ -62,8 +62,13 @@ class AnalyzeResponse(BaseModel):
     stats: DocumentStats
     findings: List[Finding]
     category_scores: Dict[str, CategoryScore]
-    # Deliberately nullable and currently always null -- see conf/scoring_v1.yaml.
+    # Deliberately nullable and null unless scoring.expose_composite is turned on.
     composite: Optional[float] = None
+    # Left as open dicts rather than typed models on purpose: their shape is set by
+    # scoring_v1.yaml, and pinning it here would mean a config change silently dropping
+    # fields from the HTTP response while the JSON Schema still accepted them.
+    severity: Dict[str, Any] = {}
+    composites: Dict[str, Any] = {}
     notes: List[str] = []
 
 

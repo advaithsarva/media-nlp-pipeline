@@ -65,9 +65,16 @@ class PostProcessor:
                 for cat, cs in sorted(scored.category_scores.items())
             },
             "composite": scored.composite,
+            # Severity, accumulation and how badly the argument's logic is disrupted.
+            "severity": scored.severity,
+            # Every composite together with the inputs that produced it. Published even
+            # when `composite` is null, because a breakdown is informative in a way a bare
+            # total is not -- and because hiding the working would defeat the point.
+            "composites": scored.composites,
             "notes": [
                 "Scores are uncalibrated: no labelled evaluation set has been used yet.",
                 "Every finding is a verbatim substring of the source text at [start_char, end_char).",
+                "Read composites.*.breakdown and .inputs rather than the totals.",
             ],
         }
         return _round_floats(record)

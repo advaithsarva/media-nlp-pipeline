@@ -1,43 +1,136 @@
 # Scoring v1.
 #
-# One score per category and nothing else. No BiasScore, no ManipulationIndex, no single
-# headline number -- those need weights fitted against a labelled corpus, and no such
-# corpus exists yet. Publishing a composite now would look authoritative while being
-# arbitrary.
+# Implements the formulas in claudenew.md 21.1 and 21.2 rather than inventing new ones.
+# Where a formula had a genuine defect it is kept but made switchable, and the default is
+# the corrected form -- see prop_score_method below.
 #
-# The formula, in words: add up the confidences of the evidence found for a category,
-# divide by document length so a long article is not penalised for being long, then
-# squash the result into 0..1.
+# Per-category score (the base every other number is built from):
 #
 #   raw     = sum of the confidences of that category's evidence spans
 #   density = raw / (word_count ** beta)
 #   score   = 1 - exp(-lambda * density)
+#
+# Severity, per claudenew.md 21.1 formula 3:
+#
+#   s_i         = c_i * w_f              confidence times the category's severity weight
+#   severity_f  = 1 - exp(-n_f)          document-level accumulation over n_f instances
+#   disruption  = max(s_i * d_f)         how badly the argument's logic is broken
+#   coherence   = 1 - disruption
+#
+# IMPORTANT: none of the composites below are calibrated. No labelled corpus has been used,
+# so the weights are the design document's suggestions, not fitted values. They are computed
+# and always shipped with their full breakdown, and `expose_composite` decides whether they
+# reach the output at all. Default off.
 
 scoring:
-  version: "1.0.0"
+  version: "1.1.0"
 
-  # How sharply density turns into a score. Higher lambda = the same evidence scores
-  # higher. Chosen by hand; this is exactly the kind of number the research track is
-  # meant to fit rather than guess.
+  # --- per-category score -------------------------------------------------------------
+
+  # How sharply evidence density turns into a score. Hand-chosen. This is exactly the kind
+  # of number the research track (claudenew.md F2) is meant to fit rather than guess.
   lambda: 4.0
 
   # Length normalisation exponent.
-  #   beta = 0 -> raw count, long articles always score higher
-  #   beta = 1 -> pure density, one loaded word in a short article dominates
-  #   beta = 0.5 -> between the two
+  #   beta = 0   raw count, long articles always score higher
+  #   beta = 1   pure density, one loaded word in a two-line article dominates
+  #   beta = 0.5 between the two
   beta: 0.5
 
-  # Round scores before writing them out so two runs are byte-identical rather than
-  # differing in the last floating-point digit.
+  # Round before writing, so two runs are byte-identical rather than differing in the last
+  # floating-point digit.
   round_places: 6
 
-  # Stays false until the detectors underneath have measured precision (R3).
+  # --- composites ---------------------------------------------------------------------
+
+  # When false the composites are computed but not published, and `composite` in the output
+  # record stays null. Turn this on only once the detectors have measured precision against
+  # a labelled evaluation set -- otherwise the number looks authoritative and is not.
   expose_composite: false
 
-# Per-category multipliers. All 1.0 on purpose: any other value would be invented.
+  # PropScore aggregation. claudenew.md 21.1 formula 4 specifies noisy_or:
+  #     PropScore = 1 - prod(1 - v_p)
+  # That form assumes the techniques are statistically independent. They are not -- loaded
+  # language, name-calling and fear appeals co-occur heavily -- so with a dozen techniques
+  # at even modest intensity the product saturates towards 1 and ordinary emotive
+  # journalism reads as propaganda. smooth_max is the corrected aggregator:
+  #     PropScore = (1/gamma) * log( mean( exp(gamma * v_p) ) )
+  # gamma -> 0 gives the mean, gamma -> infinity gives the max.
+  # Both are implemented so the two can be compared on the same documents.
+  prop_score_method: "smooth_max"    # Options: "smooth_max", "noisy_or"
+  prop_score_gamma: 4.0
+
+  # alpha in claudenew.md 21.1 formula 2: conf = alpha*rules + (1-alpha)*ml.
+  # 1.0 means pure rules. There is no ML classifier yet, so any other value would be a lie.
+  alpha: 1.0
+
+  # Frequency contribution to a technique's transparency violation (claudenew.md 13.1).
+  frequency_alpha: 0.3
+
+# Per-category multipliers for the article-level score, claudenew.md 21.1 formula 1:
+#   score_article = sum over categories of ( w_c * s_c )
+# All 1.0 except hedging. Any other value would be invented, and hedging is explicitly not
+# a fault -- 13.2 gives it weight 0.05 or excludes it entirely.
 category_weights:
   loaded_language: 1.0
   name_calling: 1.0
+  glittering_generalities: 1.0
+  appeal_to_fear: 1.0
+  whataboutism: 1.0
+  thought_terminating_cliche: 1.0
+  gaslighting: 1.0
+  guilt_by_association: 1.0
+  repetition: 1.0
   bandwagon: 1.0
+  false_dilemma: 1.0
+  no_true_scotsman: 1.0
+  burden_of_proof: 1.0
+  motive_fallacy: 1.0
+  slippery_slope: 1.0
+  anecdotal_evidence: 1.0
   unsupported_quantifier: 1.0
+  appeal_to_authority: 1.0
   source_opaqueness: 1.0
+  statistical_manipulation: 1.0
+  hedging: 0.05
+
+# The per-signal additive scheme from claudenew.md 21.2 -- the most transparent of the
+# composites, because the total is literally the sum of a visible list. Clipped at 1.0.
+# Bands: 0-0.3 low, 0.3-0.7 moderate, 0.7-1.0 high.
+additive_increments:
+  loaded_language: 0.10
+  name_calling: 0.10
+  gaslighting: 0.10
+  glittering_generalities: 0.10
+  appeal_to_fear: 0.10
+  whataboutism: 0.10
+  thought_terminating_cliche: 0.10
+  guilt_by_association: 0.15
+  repetition: 0.10
+  bandwagon: 0.10
+  false_dilemma: 0.15
+  no_true_scotsman: 0.10
+  burden_of_proof: 0.10
+  motive_fallacy: 0.10
+  slippery_slope: 0.15
+  anecdotal_evidence: 0.10
+  unsupported_quantifier: 0.10
+  appeal_to_authority: 0.10
+  source_opaqueness: 0.15
+  statistical_manipulation: 0.20
+  hedging: 0.05
+
+# Which families feed which composite. Keeping this in config rather than in code means a
+# new category joins the right composite by naming its family in taxonomy_v1.yaml.
+composite_families:
+  prop_score: [propaganda]
+  fallacy_score: [fallacy]
+  bias_signal: [bias]
+  # Style is measured and reported but never counted as manipulation.
+  excluded: [style]
+
+# Band edges used to turn a composite into a word. Two different scales exist in
+# claudenew.md 21.2 -- these are the manipulation bands (0-0.3 / 0.3-0.7 / 0.7-1).
+bands:
+  low: 0.3
+  moderate: 0.7

@@ -5,39 +5,101 @@
   "description": "What the backend receives for one document. Deliberately contains no wall-clock timestamp: the same input must produce a byte-identical record on every run, and a timestamp would break that.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "document_id", "source", "config_hashes", "stats", "findings", "category_scores", "composite", "notes"],
+  "required": [
+    "schema_version",
+    "document_id",
+    "source",
+    "config_hashes",
+    "stats",
+    "findings",
+    "category_scores",
+    "composite",
+    "severity",
+    "composites",
+    "notes"
+  ],
   "properties": {
-    "schema_version": { "type": "string" },
-    "document_id": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "schema_version": {
+      "type": "string"
+    },
+    "document_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
     "source": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["type"],
+      "required": [
+        "type"
+      ],
       "properties": {
-        "type": { "type": "string" },
-        "title": { "type": ["string", "null"] },
-        "author": { "type": ["string", "null"] },
-        "language": { "type": ["string", "null"] }
+        "type": {
+          "type": "string"
+        },
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "author": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "language": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
       }
     },
     "config_hashes": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["pipeline_hash", "taxonomy_hash", "scoring_hash"],
+      "required": [
+        "pipeline_hash",
+        "taxonomy_hash",
+        "scoring_hash"
+      ],
       "properties": {
-        "pipeline_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
-        "taxonomy_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
-        "scoring_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+        "pipeline_hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "taxonomy_hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "scoring_hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
       }
     },
     "stats": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["char_count", "word_count", "sentence_count"],
+      "required": [
+        "char_count",
+        "word_count",
+        "sentence_count"
+      ],
       "properties": {
-        "char_count": { "type": "integer", "minimum": 0 },
-        "word_count": { "type": "integer", "minimum": 0 },
-        "sentence_count": { "type": "integer", "minimum": 0 }
+        "char_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "word_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sentence_count": {
+          "type": "integer",
+          "minimum": 0
+        }
       }
     },
     "findings": {
@@ -46,15 +108,43 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["category", "rule_id", "sentence_id", "text", "start_char", "end_char", "confidence"],
+        "required": [
+          "category",
+          "rule_id",
+          "sentence_id",
+          "text",
+          "start_char",
+          "end_char",
+          "confidence"
+        ],
         "properties": {
-          "category": { "type": "string" },
-          "rule_id": { "type": "string" },
-          "sentence_id": { "type": "integer", "minimum": 0 },
-          "text": { "type": "string", "minLength": 1 },
-          "start_char": { "type": "integer", "minimum": 0 },
-          "end_char": { "type": "integer", "minimum": 1 },
-          "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+          "category": {
+            "type": "string"
+          },
+          "rule_id": {
+            "type": "string"
+          },
+          "sentence_id": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1
+          },
+          "start_char": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "end_char": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
         }
       }
     },
@@ -63,19 +153,439 @@
       "additionalProperties": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["count", "raw", "score", "calibrated"],
+        "required": [
+          "count",
+          "raw",
+          "score",
+          "calibrated"
+        ],
         "properties": {
-          "count": { "type": "integer", "minimum": 0 },
-          "raw": { "type": "number", "minimum": 0 },
-          "score": { "type": "number", "minimum": 0, "maximum": 1 },
-          "calibrated": { "type": "boolean" }
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "raw": {
+            "type": "number",
+            "minimum": 0
+          },
+          "score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "calibrated": {
+            "type": "boolean"
+          }
         }
       }
     },
     "composite": {
-      "type": ["number", "null"],
+      "type": [
+        "number",
+        "null"
+      ],
       "description": "Null until the detectors have measured precision against a labelled set."
     },
-    "notes": { "type": "array", "items": { "type": "string" } }
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "severity": {
+      "type": "object",
+      "description": "Severity per claudenew.md 21.1 formula 3. s_i = confidence * severity_weight; accumulated over instances as 1 - exp(-n); disruption is the worst s_i * disruption_factor.",
+      "required": [
+        "per_category",
+        "logical_flow_disruption",
+        "coherence"
+      ],
+      "properties": {
+        "per_category": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "instances",
+              "max_instance_severity",
+              "accumulated_severity",
+              "severity_weight"
+            ],
+            "properties": {
+              "instances": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "max_instance_severity": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "accumulated_severity": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "severity_weight": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            }
+          }
+        },
+        "logical_flow_disruption": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "disruption_driven_by": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "coherence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "composites": {
+      "type": "object",
+      "description": "Every composite index with the inputs that produced it. Always present so a total can be checked against its own working; whether a headline number is published is controlled by scoring.expose_composite.",
+      "required": [
+        "calibrated",
+        "warning",
+        "prop_score",
+        "fallacy_score",
+        "bias_signal",
+        "additive_manipulation",
+        "manipulation_index",
+        "article_score"
+      ],
+      "properties": {
+        "calibrated": {
+          "type": "boolean"
+        },
+        "warning": {
+          "type": "string"
+        },
+        "prop_score": {
+          "type": "object",
+          "required": [
+            "value"
+          ],
+          "properties": {
+            "value": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "method": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "gamma": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "band": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "clipped": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "inputs": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "number"
+              }
+            },
+            "breakdown": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "number"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "fallacy_score": {
+          "type": "object",
+          "required": [
+            "value"
+          ],
+          "properties": {
+            "value": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "method": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "gamma": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "band": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "clipped": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "inputs": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "number"
+              }
+            },
+            "breakdown": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "number"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "bias_signal": {
+          "type": "object",
+          "required": [
+            "value"
+          ],
+          "properties": {
+            "value": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "method": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "gamma": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "band": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "clipped": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "inputs": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "number"
+              }
+            },
+            "breakdown": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "number"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "additive_manipulation": {
+          "type": "object",
+          "required": [
+            "value"
+          ],
+          "properties": {
+            "value": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "method": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "gamma": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "band": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "clipped": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "inputs": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "number"
+              }
+            },
+            "breakdown": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "number"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "manipulation_index": {
+          "type": "object",
+          "required": [
+            "value"
+          ],
+          "properties": {
+            "value": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "method": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "gamma": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "band": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "clipped": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "inputs": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "number"
+              }
+            },
+            "breakdown": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "number"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "article_score": {
+          "type": "object",
+          "required": [
+            "value"
+          ],
+          "properties": {
+            "value": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "method": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "gamma": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "band": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "clipped": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "inputs": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "number"
+              }
+            },
+            "breakdown": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "number"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "logical_flow_disruption": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "coherence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "additionalProperties": false
+    }
   }
 }

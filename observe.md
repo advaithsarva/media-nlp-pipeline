@@ -938,3 +938,334 @@ as knowing how biased an article is.
 literature review. Phase 2 (ML classifier, hybrid router, composite scoring, feature layers) stays
 gated on a labelled evaluation set — building it before that measurement exists is how you get a
 confident number nobody can defend.
+
+---
+
+# 10. Build log — Phase 2 (same session, 2026-08-21)
+
+**This section exists because of a fair question you asked:** *did you use the taxonomy rules
+from the `.md` files, and did you use Airflow, Ray or Spark?*
+
+The honest answer at the time was **no to both**, and both are now fixed.
+
+- The five detectors in §8.6 came from `CLAUDE.md`'s R5 admission list, not from
+  `claudenew.md`'s actual content. §12.2 (fifteen fallacies with detection strategies), §13.2
+  (per-technique lexicons and patterns), §12.4 (the severity model) and §21 (the seven scoring
+  formulas) were all sitting there unused. They are now implemented.
+- Airflow, Spark and Ray were frozen under R7 — but R7 says *"frozen until the slice runs"*, and
+  the slice runs. Unfreezing them was legitimate, and overdue.
+
+Tests: 61 → **125**. Detectors: 5 → **21**.
+
+---
+
+## 10.1 What was read out of `claudenew.md`, and what was done with it
+
+| Section | Content | What happened |
+|---|---|---|
+| §12.2 | fifteen fallacies, one detection strategy each | 9 implemented, 6 parked with reasons (§10.6) |
+| §13.2 | ~25 propaganda techniques with lexicons and patterns | 9 implemented, rest parked |
+| §12.4 | the formal severity / confidence / disruption model | implemented in full |
+| §13.1 | `transparency_violation`, PropScore | implemented, with a correction |
+| §21.1 | seven core scoring formulas | 1, 2, 3, 4 implemented; 5 (factuality) needs claim verification, not built |
+| §21.2 | BiasScore, ManipulationIndex, the additive increment table | implemented, all behind the composite flag |
+
+One thing worth saying plainly. §12.2's strategies are not all regexes — many call for an NLI
+model, sentence embeddings, or an external knowledge base. Where a strategy needed something the
+pipeline does not have, the category was **parked, not approximated**. Approximating "strawman"
+with keywords produces a detector that fires on ordinary argument, and that is worse than not
+having it: it teaches the reader to ignore every other finding too.
+
+---
+
+## 10.2 `src/nlp_pipeline/rules_engine.py` — three new detector kinds
+
+The old engine had two kinds, `lexicon` and `regex`. Neither can express most of §13.2's rules,
+because those rules are **conditional**. §13.2 on unsupported quantifiers says it exactly:
+
+> Flag an occurrence when the sentence contains no number, %, "according to", "study" or
+> "report". *"Many (37%) of respondents"* is correctly not flagged.
+
+So three kinds were added.
+
+**`regex_unless` — the important one.** A pattern fires only when the sentence does *not* also
+contain a supporting cue.
+
+| Code | What it does and why |
+|---|---|
+| `unless` (one compiled lexicon) + `unless_patterns` (a list) | two ways to say "this sentence is properly supported": a word list (`percent`, `survey`, `poll`) and regexes (`\d+\s*%`, `according to [A-Z]`) |
+| `_is_supported(sentence_text, rule)` | one check per sentence, before any matching. Returns True and the whole category stays quiet for that sentence. |
+| the check happens per **sentence**, not per match | the evidence that legitimises "many people" is elsewhere in the same sentence, not inside the phrase itself |
+
+This one change is what makes `unsupported_quantifier`, `appeal_to_authority`,
+`statistical_manipulation` and `anecdotal_evidence` usable at all. There is a test pairing each
+one's supported and unsupported form:
+
+```
+"Many people are worried about the change."            -> fires
+"Many people (61% of 2,400 surveyed) were worried."    -> silent
+"Experts say the bridge is safe."                      -> fires
+"Experts say ..., according to a 2019 review."         -> silent
+```
+
+**`cooccurrence` — for glittering generalities.** §13.2: *"≥2 virtue words in a sentence under 15
+words → flag; a single virtue word with no elaboration cue → flag."* The second half over-fires,
+so only the first is implemented.
+
+| Code | What it does and why |
+|---|---|
+| `len(matches) >= min_hits and word_count <= max_words` | density plus brevity. A slogan is short and packed; the same two words spread through a long explanatory sentence is ordinary writing. |
+| one span from `matches[0].start()` to `matches[-1].end()` | the evidence is the *pairing*, so the quote covers both words — `"Freedom, justice and prosperity"`, not two separate one-word findings |
+
+Checked both ways: `"We need economic justice because current disparities have widened since
+2008."` stays silent; `"Freedom and justice for all!"` fires.
+
+**`repetition` — a document-level detector.** §13.2: *count n-grams across the document, flag
+anything appearing three times or more.* This cannot work sentence by sentence, because the
+signal is precisely that the phrase keeps coming back.
+
+Two problems showed up on first run, both fixed:
+
+| Problem | Fix |
+|---|---|
+| `"of the people in"` repeats in any long document and means nothing | skip an n-gram whose words are **all stopwords**. A phrase only counts if it carries at least one real word. |
+| the window slides one word at a time, so a four-word slogan matched as several overlapping n-grams — **eight findings for one repeated slogan** | keep the first match and skip anything overlapping it. Result: exactly one span per actual occurrence. There is a test asserting three occurrences give three non-overlapping spans. |
+
+---
+
+## 10.3 `conf/taxonomy_v1.yaml` — 5 categories to 21
+
+Grouped by `family`, a new field that decides which composite each category feeds.
+
+**propaganda (9)** — loaded_language, name_calling, glittering_generalities, appeal_to_fear,
+whataboutism, thought_terminating_cliche, gaslighting, guilt_by_association, repetition
+**fallacy (9)** — bandwagon, false_dilemma, no_true_scotsman, burden_of_proof, motive_fallacy,
+slippery_slope, anecdotal_evidence, unsupported_quantifier, appeal_to_authority
+**bias (2)** — source_opaqueness, statistical_manipulation
+**style (1)** — hedging
+
+Each category also gained two numbers the scoring engine needs: `severity_weight` (`w_f`, how
+badly this move misleads) and `disruption` (`d_f`, how much it breaks the argument's logic). Both
+come straight from §12.4/§21.1, and keeping them beside the detector means one file describes a
+category completely.
+
+**Places where `claudenew.md` was deliberately not followed literally:**
+
+| Design says | What was built | Why |
+|---|---|---|
+| Bandwagon: lexicon `{everyone, most people, the majority}` | six phrase patterns | the bare lexicon fires on every ordinary use of "everyone". §12.2 mentions dependency context as an *enhancement*; it is not optional, so it is baked into the patterns. |
+| Ad hominem: insult lexicon incl. `idiot, stupid, corrupt, crazy` | narrower list, `corrupt` dropped | "a corrupt official was charged" is factual reporting |
+| Name calling: `{liar, hypocrite, idiot, buffoon, criminal, crook}` | `criminal` dropped | same reason |
+| Loaded language: `{disaster, outrageous, shameful, triumphant, so-called, ridiculous}` | 25 words, `devastating`/`brutal`/`radical` excluded | "a devastating earthquake" describes an event; it is not a technique |
+| Hedging: "weight ~0.05 or excluded" | included, `severity_weight: 0.05`, family `style` | measured and reported, never counted as manipulation. §13.2 is explicit that hedging can be a sign of *honest* journalism. |
+| Gaslighting: "flag even when quoting someone else" | followed exactly | the goal is to record the tactic is present, whoever is using it |
+
+**A YAML trap worth remembering.** In a single-quoted YAML string an apostrophe is written by
+**doubling** it (`''`), not by escaping with a backslash. `'...(?:\'re)?...'` ends the string at
+the backslash-apostrophe and produces a parser error thirty lines later. Two regexes hit this.
+Patterns containing an apostrophe are now either double-quoted (with `\\` for regex backslashes)
+or use `''`.
+
+---
+
+## 10.4 `src/nlp_pipeline/scoring_engine.py` — the formulas from §21, implemented
+
+| Formula | Where | Notes |
+|---|---|---|
+| 1 — `score_article = Σ w_c · s_c` | `_composites` → `article_score` | normalised by the sum of weights used, so it stays in 0–1 |
+| 2 — `conf = α·rules + (1−α)·ml` | `_hybrid_confidence` | α is 1.0 in config. There is no ML classifier, so any other value would be a lie. The function exists so wiring one in later touches one place. |
+| 3 — `s_i = c_i · w_f`, `severity_f = 1 − exp(−n_f)`, `ℓ = max(s_i · d_f)` | `_severity` | the accumulation curve is why five ad hominems score worse than one but not five times worse |
+| 4 — PropScore | `_prop_score` | **both** aggregators, see below |
+| 5 — factuality | not built | needs claim verification against external sources. Honestly out of reach. |
+| §21.2 — additive increment table | `_additive_manipulation` | the most defensible composite here |
+| §21.2 — ManipulationIndex | `_composites` | noisy-OR over three family scores, labelled as such |
+
+### The PropScore correction, now measurable
+
+§21.1 formula 4 is `PropScore = 1 − Π(1 − v_p)`, a noisy-OR. A noisy-OR assumes the techniques
+are statistically **independent**. They are not — loaded language, name-calling and fear appeals
+travel together — so the product compounds correlated evidence and saturates.
+
+Both are implemented and `prop_score_method` picks. On the same document, the same evidence:
+
+| Method | PropScore | ManipulationIndex |
+|---|---|---|
+| `noisy_or` (the design's formula) | **0.9263** | 0.9498 |
+| `smooth_max` (default) | **0.4791** | 0.6453 |
+
+That gap is the F1 result from the research track, now a runnable experiment instead of a
+hypothesis — and a test asserts `noisy_or > smooth_max`. The smooth-max is
+`(1/γ)·log(mean(exp(γ·v_p)))`: γ→0 gives the mean, γ→∞ gives the max, and it never multiplies
+correlated evidence together.
+
+The design's own calibration target in §13.1 is *"an ordinary news article scores 0.1–0.2"*. The
+sample article — one loaded word, one liar, one "everyone knows" in 100 words of otherwise
+ordinary prose — scores **0.93 under noisy-OR**. It fails its own target by a factor of five.
+Under smooth-max it scores 0.41, which is still high but is at least in the right part of the
+scale.
+
+### Everything ships with its working
+
+Every composite returns `value` plus the inputs that produced it — `inputs` for the family
+scores, `breakdown` for the additive one. `composites.calibrated` is `False` and
+`composites.warning` says so in words. A number without its working is not auditable, and
+auditability is the point.
+
+`expose_composite` still defaults to **false**, so `composite` in the output record stays `null`.
+The composites are computed and published as a breakdown regardless — hiding the working while
+withholding the total would be the worst of both.
+
+---
+
+## 10.5 Batch and orchestration — Ray, Spark, Airflow
+
+### `src/batch_processing/classify_batch.py` — the one that always works
+
+Single process, no dependencies beyond the pipeline. This is what Airflow calls, and it is the
+reference the distributed versions are checked against.
+
+| Code | What it does and why |
+|---|---|
+| `sorted(input_dir.glob(pattern))` | the order the filesystem lists files in is not stable between machines |
+| `try/except` per document, collecting into `failures` | one unreadable file in a folder of a thousand must not lose the other 999 — but it must not vanish silently either, so it comes back in a second list |
+| `return 1 if failures and not records else 0` | a non-zero exit is how Airflow learns the task failed |
+| `document_ids` sorted in the summary | so two runs of the same folder produce the same summary |
+
+### `src/batch_processing/preprocess_ray.py` — actually runs, actually tested
+
+Ray installed (2.57.0) and the distributed path is exercised by the suite.
+
+| Code | What it does and why |
+|---|---|
+| **paths** cross the process boundary, not documents | a path is a few bytes; parsed text plus tokens is megabytes |
+| each worker builds its **own** `PipelineRunner` | it holds compiled regexes and an open JSON schema, neither of which pickles cleanly. Building one costs milliseconds against seconds of work. |
+| `_split` deals items round-robin | even load without needing to know document sizes |
+| `records.sort(key=document_id)` at the end | **the line that makes distribution safe.** Workers finish in whatever order they finish; sorting restores a canonical order, which is why the Ray output matches the single-process output exactly. |
+| `runtime_env={"env_vars": {"PYTHONPATH": ...}}` | see the bug below |
+| `os.pathsep` | `;` on Windows, `:` elsewhere |
+
+**Bug found by the tests.** The Ray path worked from the command line and failed under pytest
+with `ModuleNotFoundError: No module named 'batch_processing'`. Ray workers are fresh processes
+that do not inherit the parent's `sys.path`; from the command line `PYTHONPATH=src` had been set
+by hand, and pytest does not set it. Ray pickles the task **by reference**, so the worker must be
+able to import the module. Fixed by passing `PYTHONPATH` through `runtime_env`. Worth noting
+because it is the classic distributed-Python failure and it would have gone unnoticed without a
+test that ran Ray in-process.
+
+Two properties are now tested rather than assumed:
+- `ray_preprocess(...)` output `==` `classify_batch(...)` output, compared as sorted JSON
+- 1 worker and 5 workers give identical results
+
+### `src/batch_processing/preprocess_spark.py` — written, not run
+
+Spark needs a JVM, which is not installed here. Written correctly and syntax-checked.
+
+| Decision | Why |
+|---|---|
+| `mapPartitions`, not `map` | one `PipelineRunner` per partition rather than per document. Per document it would recompile every regex thousands of times. |
+| the runner is never sent over the wire | it would not pickle; each worker builds its own from config |
+| result is **one JSON string per document**, not a nested Row | Spark would need an explicit `StructType` for the nested findings and composites, and that schema would have to be hand-maintained against `output_schema.json`. One string column cannot drift. |
+| sorted by `document_id` before writing | same reason as Ray |
+| a bad file becomes a **row with an error**, not a dead job | one malformed document must not kill a cluster run |
+
+The module docstring says plainly when *not* to use it: below roughly a hundred thousand
+documents Spark is slower than `classify_batch`, because JVM startup dominates.
+
+### `airflow_dags/media_nlp_batch_dag.py` — rewritten
+
+Was four lines with a deprecated import (`schedule_interval`, removed in Airflow 3) and no error
+handling. Now `ingest_check → analyse → validate_output → archive`.
+
+| Task | What it does and why it exists |
+|---|---|
+| `ingest_check` | fails immediately if the input folder is empty. Without it, `analyse` succeeds having done nothing, and an empty output looks exactly like a clean corpus. |
+| `analyse` | a `BashOperator` calling `batch_processing.classify_batch`. Separate process, so a crash is isolated and retryable. |
+| `validate_output` | re-reads the run summary and refuses to archive a run where everything failed, or where failures outnumber successes. A few bad files in a large corpus is normal; a majority failing is a broken run. |
+| `archive` | dated copy, so a bad config change can be found by diffing two days |
+
+`max_active_runs=1` — two runs writing the same output file would interleave their lines.
+Tasks communicate through **files**, not XCom: a run summary can be hundreds of kilobytes and
+XCom is for small values.
+
+**Airflow does not run on Windows**, so the DAG is unexecuted here. What *is* tested: it parses,
+and — the hard rule — it imports **nothing** from `nlp_pipeline` or `io_adapters`. The test walks
+the AST and asserts both are absent, so the "Airflow orchestrates only, it contains no NLP logic"
+rule is enforced by the suite rather than by good intentions.
+
+---
+
+## 10.6 Still parked, and why
+
+| Category | Needs |
+|---|---|
+| strawman | NLI — "some say X" as premise against the author's counter as hypothesis |
+| red herring | sentence embeddings, to measure topic distance from the article thesis |
+| cherry picking | stance classification per sentence, or an external baseline |
+| equivocation | word-sense disambiguation; §12.2 calls it "hard to fully automate" |
+| circular reasoning | argument-graph cycle detection or semantic similarity between premise and conclusion |
+| false cause | §12.2's own rule ("because" joining two past-tense clauses) fires on ordinary causal writing — this is the R2 example |
+| omission bias | other articles on the same story |
+| conflict of interest | a knowledge base of author and outlet affiliations |
+| coherence drop | GPT-2 perplexity per sentence |
+| framing bias | topic-specific frame lexicons |
+| scapegoating, card stacking | **NER plus per-entity sentiment — buildable the day spaCy is added**, and the design for both is written out in §13.2 |
+
+Scapegoating and card stacking are the nearest two. Everything else needs a model or a corpus.
+
+**Also not built:** factuality (§21.1 formula 5) needs claim verification against external
+sources — `r_vc`, `σ̄`, `Cn`, `M` are all outside the text.
+
+---
+
+## 10.7 Terminal log — Phase 2
+
+| # | Command | Purpose / result |
+|---|---|---|
+| 28 | `grep -n "^#\{1,3\} " claudenew.md` | mapped the document; located §12.2, §13.1–2, §12.4, §21.1–2 |
+| 29 | `sed -n 1708,1740p` / `1923,2180p` / `2946,3080p claudenew.md` | read the fallacy set, the per-technique lexicons and the seven formulas |
+| 30 | `PY /tmp/tax_check.py` | **failed** — `yaml.parser.ParserError` at line 271. Cause: `\'` inside a single-quoted YAML scalar. |
+| 31 | patched the two apostrophe regexes, re-ran | 21 categories load, 16+ regexes compile |
+| 32 | same script, three corpora | neutral → nothing · properly-sourced statistics → nothing · loaded text → 10 distinct detectors, all verbatim |
+| 33 | repetition test | 8 overlapping spans for one slogan — fixed by the greedy non-overlap rule, then 4 |
+| 34 | `PY /tmp/score_check.py` | **noisy_or 0.9263 vs smooth_max 0.4791** on identical evidence |
+| 35 | `PY -m pytest` | 61 passed with the expanded taxonomy |
+| 36 | `PY -m pip install ray` | ray 2.57.0 |
+| 37 | built a 5-file corpus, ran `classify_batch` | 5 processed, 0 failed |
+| 38 | ran `preprocess_ray --workers 4` | 5 processed, 0 failed |
+| 39 | `PY -m pytest` | **2 failed** — Ray workers could not import `batch_processing` |
+| 40 | added `runtime_env` PYTHONPATH, re-ran | 9 batch tests pass |
+| 41 | `PY -m pytest` | **125 passed** |
+| 42 | ran `main.py` twice, `cmp` | still byte-identical with 21 detectors and all composites |
+
+---
+
+## 10.8 Where things stand
+
+| | Phase 0 | Phase 1 | Phase 2 |
+|---|---|---|---|
+| Detectors | 5 | 5 | **21** |
+| Detector kinds | 2 | 2 | **5** |
+| Scoring | per-category only | per-category only | **§21 formulas 1–4, severity, disruption, 6 composites** |
+| Storage | — | JSONL/JSON/Parquet | same |
+| API | — | 3 endpoints | same, now returning severity and composites |
+| Batch | — | — | **single-process + Ray (tested), Spark (written)** |
+| Orchestration | — | — | **Airflow DAG, 4 tasks** |
+| Tests | 43 | 61 | **125** |
+| Byte-identical reruns | yes | yes | yes |
+
+**What has not changed, and should not be glossed over:** none of this is calibrated. Twenty-one
+detectors with hand-chosen thresholds are still twenty-one guesses; there are simply more of them
+now. The composites are computed from weights the design document suggested, not weights anyone
+fitted. `expose_composite` stays false for that reason.
+
+What did change is that the guesses are now **falsifiable**. The noisy-OR saturation is no longer
+an argument in a markdown file — it is two numbers from the same document, and switching one
+config line reproduces it.
+
+**Next:**
+1. Run it on real articles you have opinions about. 21 detectors on hand-picked test sentences
+   proves the code works, not that the detectors are right.
+2. R8 literature review — still the gate on the research track, still unstarted, still just
+   reading.
+3. spaCy, if you want scapegoating and card stacking — they are the two nearest parked categories
+   and the design for both is already written.

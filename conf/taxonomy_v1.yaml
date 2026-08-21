@@ -1,33 +1,55 @@
-# Taxonomy v1 -- deliberately small.
+# Taxonomy v1.
 #
-# Five categories, not twenty-eight. Each one has to be detectable from the text alone
-# with high precision; anything needing outside knowledge (strawman, cherry picking,
-# conflict of interest) is parked, not attempted badly.
+# Every category here comes from claudenew.md 12.2 (the fallacy set) and 13.2 (the
+# propaganda techniques). What is NOT here is just as deliberate: strawman, red herring,
+# cherry picking, equivocation, omission bias, conflict of interest, coherence drop,
+# framing bias and narrative inconsistency all need something this pipeline does not have
+# -- an NLI model, sentence embeddings, other articles to compare against, or an external
+# knowledge base. Attempting them from regex alone produces noise, and noise is worse than
+# a gap because it teaches the reader to ignore the output.
 #
-# Every match must be an exact substring of the article with real character offsets,
-# so detectors are written as lexicons or regexes over the raw text -- never as
-# something that paraphrases.
+# Two more are parked for a smaller reason: scapegoating and card stacking need named
+# entity recognition and per-entity sentiment. They become buildable the day spaCy is
+# added, and the design for both is written up in claudenew.md 13.2.
+#
+# Every match must be an exact substring of the article with real character offsets, so
+# detectors are lexicons, regexes or counts over the raw text -- never anything that
+# paraphrases.
+#
+# Fields on each category:
+#   detector         lexicon | regex | regex_unless | cooccurrence | repetition
+#   base_confidence  how much to trust a hit from this detector, 0-1
+#   family           fallacy | propaganda | bias | style
+#   severity_weight  w_f in claudenew.md 21.1 formula 3: how badly this misleads
+#   disruption       d_f in the same formula: how much it breaks the argument's logic
 
 taxonomy:
-  version: "1.0.0"
-  # A match below this confidence is dropped. 0.8, not 0.5: it is better to report
-  # nothing than to report wrongly.
+  version: "1.1.0"
+  # A category below this confidence never emits. 0.8, not 0.5: claudenew.md 12.4 offers
+  # both, and this is the precision end. Better to report nothing than to report wrongly.
   default_threshold: 0.8
 
 categories:
 
+  # ------------------------------------------------------------------ propaganda
+
   - id: loaded_language
     name: "Loaded Language"
+    family: propaganda
     description: >
-      Emotionally charged wording used where a neutral equivalent exists. Reports the
-      charged word itself as evidence. Words that also appear in plain factual reporting
-      (devastating, brutal, radical) are left out on purpose.
+      Emotionally charged wording where a neutral equivalent exists. The easiest technique
+      to detect because the lexical signature is unambiguous. Words that also appear in
+      plain factual reporting (devastating, brutal, radical, corrupt) are left out on
+      purpose -- "a devastating earthquake" is a description, not a technique.
     detector: lexicon
     base_confidence: 0.85
+    severity_weight: 0.6
+    disruption: 0.3
     terms:
       - disastrous
       - disgraceful
       - shameful
+      - shameless
       - outrageous
       - appalling
       - egregious
@@ -44,16 +66,24 @@ categories:
       - laughable
       - ludicrous
       - pathetic
-      - shameless
+      - so-called
+      - traitorous
+      - treacherous
+      - sickening
+      - grotesque
 
   - id: name_calling
     name: "Name-Calling / Labelling"
+    family: propaganda
     description: >
-      An insulting label attached to a person or group in place of an argument. Terms
-      with common literal meanings (clown, snake, rat, puppet) are excluded -- they fire
-      on ordinary prose.
+      A derogatory label attached to a person or group in place of an argument. Terms with
+      common literal meanings (clown, snake, rat, puppet) are excluded because they fire on
+      ordinary prose. Political labels used pejoratively (socialist, elitist) need tone
+      context to judge and are left to the ML stage.
     detector: lexicon
     base_confidence: 0.85
+    severity_weight: 0.7
+    disruption: 0.4
     terms:
       - liar
       - crook
@@ -72,48 +102,389 @@ categories:
       - grifter
       - conman
       - warmonger
+      - fraudster
+      - parasite
+      - imbecile
+
+  - id: glittering_generalities
+    name: "Glittering Generalities"
+    family: propaganda
+    description: >
+      Vague virtue words evoking approval without any specifics -- the language of slogans.
+      Fired only when two or more appear in a short sentence, because a single virtue word
+      in an explanatory sentence ("we need economic justice because current disparities...")
+      is ordinary argument, not a slogan.
+    detector: cooccurrence
+    base_confidence: 0.8
+    severity_weight: 0.4
+    disruption: 0.2
+    min_hits: 2
+    max_words: 14
+    terms:
+      - freedom
+      - liberty
+      - justice
+      - honour
+      - honor
+      - integrity
+      - prosperity
+      - unity
+      - progress
+      - patriotism
+      - destiny
+      - greatness
+      - courage
+      - sacrifice
+      - values
+
+  - id: appeal_to_fear
+    name: "Appeal to Fear"
+    family: propaganda
+    description: >
+      Fear used in place of argument. The lexicon is restricted to words that carry
+      alarm on their own, and excludes the vocabulary of ordinary disaster reporting
+      (flood, earthquake, casualties) which describes fear-inducing events factually.
+    detector: lexicon
+    base_confidence: 0.8
+    severity_weight: 0.9
+    disruption: 0.5
+    terms:
+      - catastrophe
+      - apocalyptic
+      - doomed
+      - annihilation
+      - terrifying
+      - nightmarish
+      - dire consequences
+      - point of no return
+      - before it is too late
+      - before it's too late
+      - existential threat
+      - descend into chaos
+      - reign of terror
+
+  - id: whataboutism
+    name: "Whataboutism"
+    family: propaganda
+    description: >
+      Deflecting criticism by raising a different issue. The literal phrase catch covers
+      most real cases and almost never misfires, which makes this one of the highest
+      precision detectors in the set.
+    detector: regex
+    base_confidence: 0.9
+    severity_weight: 0.6
+    disruption: 0.7
+    patterns:
+      - '(?:^|[.!?]\s+|["“]\s*)(?:and\s+|but\s+|so\s+)?what\s+about\b'
+      - '(?:^|[.!?]\s+)how\s+about\s+(?:when|the\s+time)\b'
+      - '\byou\s+(?:criticis|criticiz)\w*\s+\w+[^.!?]{0,40}\bbut\s+you\b'
+
+  - id: thought_terminating_cliche
+    name: "Thought-Terminating Cliché"
+    family: propaganda
+    description: >
+      A stock phrase that closes discussion instead of answering it. Fixed phrases, so
+      precision is high.
+    detector: regex
+    base_confidence: 0.85
+    severity_weight: 0.5
+    disruption: 0.6
+    patterns:
+      - '\bit\s+is\s+what\s+it\s+is\b'
+      - "\\bit's\\s+what\\s+it\\s+is\\b"
+      - '\bend\s+of\s+(?:story|discussion|debate)\b'
+      - '\bthat\s+is\s+just\s+the\s+way\s+it\s+is\b'
+      - '\bnothing\s+(?:more|else)\s+to\s+(?:say|discuss)\b'
+      - '\bcase\s+closed\b'
+      - '\bwake\s+up,?\s+(?:people|sheeple)\b'
+
+  - id: gaslighting
+    name: "Gaslighting"
+    family: propaganda
+    description: >
+      Language that makes the reader doubt their own perception. Flagged even when the
+      article is quoting someone else using it -- the aim is to record that the tactic is
+      present in the content, whoever is deploying it (claudenew.md 13.2).
+    detector: regex
+    base_confidence: 0.9
+    severity_weight: 0.9
+    disruption: 0.6
+    patterns:
+      - "\\byou(?:'re|\\s+are)\\s+being\\s+paranoid\\b"
+      - "\\byou(?:'re|\\s+are)\\s+imagining\\s+(?:things|it)\\b"
+      - "\\byou(?:'re|\\s+are)\\s+overreacting\\b"
+      - '\bthat\s+never\s+happened\b'
+      - "\\bit(?:'s|\\s+is)\\s+all\\s+in\\s+your\\s+head\\b"
+      - "\\bdon'?t\\s+be\\s+so\\s+sensitive\\b"
+      - '\bno\s+one\s+will\s+believe\s+you\b'
+
+  - id: guilt_by_association
+    name: "Guilt by Association"
+    family: propaganda
+    description: >
+      Tainting a position by linking it to a vilified party. The association verb and the
+      vilified party must both appear, and the Hitler/Nazi comparison (reductio ad
+      Hitlerum) is caught separately because it is almost always this move.
+    detector: regex
+    base_confidence: 0.85
+    severity_weight: 0.8
+    disruption: 0.6
+    patterns:
+      - '\b(?:ally\s+of|allied\s+with|associated\s+with|linked\s+to|connected\s+to|ties\s+to|in\s+the\s+same\s+camp\s+as)\s+(?:the\s+)?(?:nazis?|hitler|fascists?|terrorists?|the\s+mafia|criminals?|extremists?)\b'
+      - '\b(?:the\s+)?(?:next|new|modern[\s-]day)\s+(?:hitler|stalin|mussolini)\b'
+      - '\bno\s+better\s+than\s+(?:the\s+)?(?:nazis?|terrorists?|fascists?)\b'
+
+  # ------------------------------------------------------------------ fallacies
 
   - id: bandwagon
     name: "Bandwagon / Appeal to Popularity"
+    family: fallacy
     description: >
       Treating wide agreement as proof. Matched as phrases rather than single words,
       because the signal is the construction ("everyone knows"), not the word "everyone".
+      claudenew.md 12.2 suggests a bare lexicon of {everyone, most people, the majority};
+      that fires constantly on ordinary prose, so the dependency context it recommends as
+      an "enhancement" is baked into the patterns instead.
     detector: regex
     base_confidence: 0.9
+    severity_weight: 0.5
+    disruption: 0.4
     patterns:
-      - '\b(?:everyone|everybody|no one|nobody)\s+(?:knows|agrees|believes|thinks|denies|doubts)\b'
+      - '\b(?:everyone|everybody|no\s+one|nobody)\s+(?:knows|agrees|believes|thinks|denies|doubts)\b'
       - '\b(?:we|they)\s+all\s+(?:know|agree|understand)\b'
       - '\bthe\s+(?:vast\s+)?majority\s+of\s+(?:people|voters|citizens|americans)\s+(?:know|agree|believe)\b'
       - '\bjoin\s+the\s+(?:millions|thousands)\b'
       - '\beveryone\s+is\s+(?:saying|talking\s+about)\b'
+      - '\b(?:most|all)\s+(?:sensible|reasonable|decent)\s+people\s+(?:know|agree|believe)\b'
+
+  - id: false_dilemma
+    name: "False Dilemma / Black-and-White Thinking"
+    family: fallacy
+    description: >
+      Two options presented where more exist. A plain "either...or" is ordinary English and
+      is not matched; only the constructions that assert there is no third option are.
+    detector: regex
+    base_confidence: 0.85
+    severity_weight: 0.7
+    disruption: 0.7
+    patterns:
+      - '\b(?:you(?:\s+are|''re)?\s+either\s+with\s+us\s+or\s+against\s+us)\b'
+      - '\b(?:there\s+(?:is|are)\s+)?no\s+(?:other\s+)?(?:choice|option|alternative|middle\s+ground)\b'
+      - '\bthe\s+only\s+(?:way|option|choice)\s+(?:is|forward|left)\b'
+      - '\bwe\s+have\s+no\s+choice\s+but\s+to\b'
+      - '\beither\s+we\s+\w+[^.!?]{0,40}\bor\s+we\s+(?:lose|fail|die|surrender|perish)\b'
+
+  - id: no_true_scotsman
+    name: "No True Scotsman"
+    family: fallacy
+    description: >
+      Counterexamples defined away to protect a universal claim. A narrow phrase pattern,
+      so precision is very high and recall is low -- which is the correct trade here.
+    detector: regex
+    base_confidence: 0.9
+    severity_weight: 0.6
+    disruption: 0.7
+    patterns:
+      - '\bno\s+(?:true|real|genuine)\s+\w+\s+would\b'
+      - '\bany\s+(?:true|real|genuine)\s+\w+\s+would\s+(?:never|always)\b'
+
+  - id: burden_of_proof
+    name: "Burden of Proof Shift"
+    family: fallacy
+    description: >
+      The claimant demanding that others disprove them. "Nobody has proven it false, so it
+      is true" is the canonical form.
+    detector: regex
+    base_confidence: 0.85
+    severity_weight: 0.6
+    disruption: 0.6
+    patterns:
+      - '\b(?:can|could)\s+you\s+prove\s+(?:that\s+)?(?:i\s*(?:''m|am)\s+wrong|otherwise|it\s+is\s+not)\b'
+      - '\bno\s+one\s+has\s+(?:ever\s+)?(?:proven|disproven|proved)\b'
+      - '\buntil\s+(?:someone|anyone)\s+proves\s+(?:otherwise|me\s+wrong)\b'
+      - '\bprove\s+(?:me|it)\s+wrong\b'
+
+  - id: motive_fallacy
+    name: "Motive Fallacy"
+    family: fallacy
+    description: >
+      Dismissing an argument by attacking the arguer's motive rather than the argument.
+    detector: regex
+    base_confidence: 0.8
+    severity_weight: 0.6
+    disruption: 0.5
+    patterns:
+      - '\b(?:only|just)\s+(?:says?|said|supports?|wants?|argues?)\s+(?:this|that|it)\s+because\b'
+      - '\bof\s+course\s+(?:he|she|they)\s+would\s+say\s+that\b'
+      - '\b(?:has|have)\s+a\s+vested\s+interest\s+in\b'
+      - '\bpushing\s+(?:an|their|his|her)\s+own\s+agenda\b'
+
+  - id: slippery_slope
+    name: "Slippery Slope"
+    family: fallacy
+    description: >
+      A minor step asserted to lead inevitably to an extreme outcome. Requires both the
+      conditional cascade and an extreme-outcome word, because conditionals alone are
+      ordinary reasoning.
+    detector: regex
+    base_confidence: 0.8
+    severity_weight: 0.7
+    disruption: 0.6
+    patterns:
+      - '\bif\s+we\s+(?:allow|permit|let)[^.!?]{0,60}\b(?:next\s+thing|before\s+long|eventually|it\s+will\s+not\s+stop)\b'
+      - '\b(?:this|that)\s+(?:is|will\s+be)\s+(?:just\s+)?the\s+(?:first\s+step|thin\s+end\s+of\s+the\s+wedge|beginning\s+of\s+the\s+end)\b'
+      - '\bwhere\s+(?:will|does)\s+it\s+end\b'
+      - '\bopen(?:s|ing)?\s+the\s+floodgates\b'
+      - '\bwill\s+(?:inevitably|surely)\s+lead\s+to\s+(?:chaos|disaster|collapse|ruin|tyranny)\b'
+
+  - id: anecdotal_evidence
+    name: "Anecdotal Evidence"
+    family: fallacy
+    description: >
+      A personal story offered as proof of a general claim. Fires only when a narrative
+      marker is present and the sentence carries no supporting data, which is what stops it
+      matching ordinary human-interest reporting.
+    detector: regex_unless
+    base_confidence: 0.8
+    severity_weight: 0.5
+    disruption: 0.4
+    patterns:
+      - '\b(?:a\s+friend\s+of\s+mine|in\s+my\s+experience|i\s+(?:once|remember)|we\s+once|one\s+time\s+i)\b'
+      - '\bi\s+know\s+(?:someone|a\s+(?:man|woman|guy|person))\s+who\b'
+    unless_terms: [study, survey, data, research, percent, statistics, sample]
+    unless_patterns:
+      - '\d+\s*%'
+      - '\baccording\s+to\b'
 
   - id: unsupported_quantifier
     name: "Unsupported Quantifier"
+    family: fallacy
     description: >
-      An absolute claim (all, never, without exception) presented with no supporting
-      figure or source. Narrowed to explicit absolutes so that ordinary uses of "all"
-      and "every" do not fire.
-    detector: regex
+      A vague quantity claim with nothing behind it. This is the claudenew.md 13.2 rule
+      implemented as designed: flag "many / most / countless / numerous" only when the
+      sentence contains no number, percentage, study or attribution. "Many (37%) of
+      respondents" is correctly left alone; "many people are saying" is not.
+    detector: regex_unless
     base_confidence: 0.8
+    severity_weight: 0.5
+    disruption: 0.3
     patterns:
+      - '\b(?:many|most|numerous|countless|a\s+lot\s+of|scores\s+of|untold\s+numbers\s+of)\s+(?:people|voters|citizens|experts|scientists|americans|families|workers|businesses)\b'
       - '\b(?:literally|absolutely|completely|totally)\s+(?:everyone|no\s+one|nobody|everything|nothing)\b'
       - '\b(?:every\s+single|each\s+and\s+every)\s+\w+\b'
       - '\bwithout\s+(?:a\s+)?(?:single\s+)?exception\b'
       - '\b(?:all|every)\s+(?:experts|scientists|economists|doctors|analysts)\s+agree\b'
       - '\bno\s+(?:serious|credible|reasonable)\s+(?:person|expert|observer)\s+(?:would|could|can)\b'
+    unless_terms: [percent, survey, poll, census, sample]
+    unless_patterns:
+      - '\d+\s*%'
+      - '\b\d[\d,.]*\s+(?:people|respondents|voters|households|cases|of\s+them)\b'
+      - '\baccording\s+to\s+(?:the\s+)?[A-Z]'
+
+  - id: appeal_to_authority
+    name: "Appeal to Authority (misused)"
+    family: fallacy
+    description: >
+      Leaning on unnamed expertise instead of evidence. Fires only when no actual name,
+      institution or publication is given in the same sentence -- "Professor Lin of Leeds
+      University said" is proper sourcing and must not match.
+    detector: regex_unless
+    base_confidence: 0.8
+    severity_weight: 0.5
+    disruption: 0.4
+    patterns:
+      - '\b(?:experts|scientists|doctors|economists|analysts|researchers)\s+(?:say|agree|believe|warn|confirm)\b'
+      - '\b(?:research|science|studies)\s+(?:shows?|proves?|confirms?)\b'
+      - '\bexperts\s+are\s+(?:clear|unanimous)\b'
+    unless_patterns:
+      - '\b(?:at|from|of)\s+(?:the\s+)?[A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)*\s+(?:University|Institute|College|Hospital|Laboratory|Centre|Center)\b'
+      - '\b(?:Dr|Prof|Professor)\.?\s+[A-Z][a-z]+\b'
+      - '\bpublished\s+in\s+(?:the\s+)?[A-Z]'
+      - '\baccording\s+to\s+(?:a\s+)?\d{4}\b'
+
+  # ------------------------------------------------------------------ bias / sourcing
 
   - id: source_opaqueness
     name: "Source Opaqueness"
+    family: bias
     description: >
-      A claim attributed to someone the reader cannot check. "Officials said" is left out
+      A claim attributed to someone the reader cannot check. "Officials said" is excluded
       because it is standard sourced reporting; the target is attribution with no
-      identifiable source behind it at all.
+      identifiable source behind it at all. claudenew.md 13.2 defines the metric as opaque
+      references outnumbering named ones; here each opaque reference is reported
+      individually so the evidence stays quotable.
     detector: regex
     base_confidence: 0.85
+    severity_weight: 0.6
+    disruption: 0.3
     patterns:
       - '\b(?:sources?|insiders?|observers?|critics)\s+(?:say|says|said|claim|claims|claimed|suggest|suggests|believe|believes|told)\b'
       - '\b(?:reports?|rumou?rs?)\s+(?:indicate|indicates|suggest|suggests|say|claim)\b'
       - '\bit\s+is\s+(?:widely\s+)?(?:known|believed|said|understood|rumou?red)\s+that\b'
       - '\b(?:many|some|most)\s+(?:people|experts|analysts|observers|critics)\s+(?:say|believe|think|argue|feel)\b'
-      - '\baccording\s+to\s+(?:sources|insiders|people\s+familiar)\b'
-      - '\bstudies\s+(?:show|shows|suggest|suggests|prove)\b'
+      - '\baccording\s+to\s+(?:sources|insiders|people\s+familiar|a\s+source)\b'
+      - '\ba\s+source\s+close\s+to\b'
+      - '\breportedly\b'
+
+  - id: statistical_manipulation
+    name: "Statistical Manipulation"
+    family: bias
+    description: >
+      A figure presented without the context that makes it meaningful -- a percentage with
+      no denominator, a change with no baseline. Fires only when the sentence supplies no
+      "of / out of / from / compared with" context cue.
+    detector: regex_unless
+    base_confidence: 0.8
+    severity_weight: 0.7
+    disruption: 0.3
+    patterns:
+      - '\b(?:up|down|rose|fell|surged|plunged|soared)\s+(?:by\s+)?\d[\d,.]*\s*%'
+      - '\b\d[\d,.]*\s*%\s+(?:more|less|higher|lower|increase|decrease)\b'
+      - '\brecord[\s-](?:breaking|high|low)\b'
+    unless_terms: [compared, versus, baseline, since, between, previous, denominator]
+    unless_patterns:
+      - '\b(?:of|out\s+of|from)\s+\d'
+      - '\bin\s+(?:19|20)\d{2}\b'
+      - '\bper\s+(?:cent\s+)?(?:of|capita)\b'
+
+  # ------------------------------------------------------------------ style, not a fault
+
+  - id: repetition
+    name: "Repetition"
+    family: propaganda
+    description: >
+      The same phrase driven home again and again. claudenew.md 13.2 specifies counting
+      n-grams across the document and flagging anything that appears three times or more.
+      Phrases made entirely of stopwords ("of the people in") are skipped by the engine,
+      because those repeat in any long document and mean nothing.
+    detector: repetition
+    base_confidence: 0.8
+    severity_weight: 0.4
+    disruption: 0.2
+    ngram_size: 4
+    min_repeats: 3
+
+  - id: hedging
+    name: "Hedging"
+    family: style
+    description: >
+      Softening language -- may, might, could, suggests. Tracked because it changes how
+      certain a claim reads, but explicitly NOT a fault: hedging is often a sign of honest
+      journalism. claudenew.md 13.2 gives it weight 0.05 or excludes it, so its severity
+      weight is near zero and it never contributes to a manipulation score.
+    detector: lexicon
+    base_confidence: 0.8
+    severity_weight: 0.05
+    disruption: 0.0
+    terms:
+      - may
+      - might
+      - could
+      - perhaps
+      - possibly
+      - presumably
+      - arguably
+      - seemingly
+      - apparently
+      - suggests
+      - indicates
