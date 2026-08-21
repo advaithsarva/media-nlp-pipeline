@@ -1,4 +1,4 @@
-#Handles version IDs, diffs between versions (v1 vs v2), migration logic. Great for long-term evolution.
+#Suggest new taxonomy nodes based on clustering/embeddings/co-occurrence. Good for future "active learning" features.
 from typing import Dict,Any
 def suggest_new_nodes(embeddings, existing_taxonomy) -> Dict[str, Any]:
     """Cluster unlabeled embeddings and suggest new topics."""

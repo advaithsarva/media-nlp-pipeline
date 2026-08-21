@@ -1,4 +1,4 @@
-#Suggest new taxonomy nodes based on clustering/embeddings/co-occurrence. Good for future “active learning” features.
+#Handles version IDs, diffs between versions (v1 vs v2), migration logic. Great for long-term evolution.
 from typing import Dict,Any
 def diff_taxonomies(old: Dict[str, Any], new: Dict[str, Any]) -> Dict[str, Any]:
     """Return added/removed/changed nodes."""
