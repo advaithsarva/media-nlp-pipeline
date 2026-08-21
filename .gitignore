@@ -52,3 +52,7 @@ tree.txt
 # Pipeline output
 data/processed/
 jsonl_output/
+
+# Evaluation output (the gold set IS tracked; the generated report is not)
+eval/report.md
+eval/results.json

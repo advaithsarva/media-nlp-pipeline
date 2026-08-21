@@ -31,6 +31,18 @@ class Sentence:
     end_char: int     # exclusive, like a Python slice
 
 
+# A named thing spaCy found -- a person, organisation, nationality or place. Offsets come
+# straight from spaCy and refer to the same untouched document text as everything else,
+# which is why an entity mention can be quoted as evidence like any other span.
+@dataclass(frozen=True)
+class Entity:
+    text: str
+    label: str        # PERSON, ORG, NORP, GPE, ...
+    start_char: int
+    end_char: int
+    sentence_id: int
+
+
 @dataclass
 class NormalizedDocument:
     """The original text plus annotations. Deliberately has no `clean_text` field."""
@@ -38,6 +50,11 @@ class NormalizedDocument:
     text: str
     tokens: List[Token]                 # required: a document with no tokens hides a bug
     sentences: List[Sentence] = field(default_factory=list)
+    # Empty unless the entity stage ran. Detectors that need entities check this and
+    # stay quiet when it is empty, rather than guessing.
+    entities: List[Entity] = field(default_factory=list)
+    # entity key -> {mentions, sentence_ids, average_sentiment}. Filled by EntityAnalyzer.
+    entity_sentiment: Dict[str, Any] = field(default_factory=dict)
     language: Optional[str] = None
     # default_factory so each instance gets its own dict instead of sharing one
     metadata: Dict[str, Any] = field(default_factory=dict)

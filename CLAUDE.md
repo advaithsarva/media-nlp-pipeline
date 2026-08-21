@@ -64,13 +64,20 @@ Five constraints that govern every design choice:
   `data_schema/output_schema.json`.
 - **Scalable** — batch via Airflow + Spark/Ray; real-time via API.
 
-**Status: Phases 0, 1 and 2 complete (2026-08-21).** `python src/main.py --input article.txt` runs end to
+**Status: Phases 0-3 built (2026-08-21).** `python src/main.py --input article.txt` runs end to
 end, emits schema-valid JSON with verbatim evidence spans and true character offsets, and two
 consecutive runs are byte-identical. Results can be stored (JSONL/JSON/Parquet) and the pipeline
 is callable over HTTP (`/health`, `/analyze`, `/analyze/batch`). 21 detectors drawn from
 `claudenew.md` §12.2/§13.2, the severity model from §12.4 and scoring formulas 1-4 from §21 are
-implemented. Batch runs single-process or across Ray workers (both tested, byte-identical to each
-other); a Spark job and an Airflow DAG are written but unrunnable on Windows. 125 tests pass. All five known bugs are fixed. Environment is
+implemented, including scapegoating and card stacking on spaCy NER + VADER. Batch runs
+single-process or across Ray workers (both tested, byte-identical to each other); a Spark job and
+an Airflow DAG are written but unrunnable on Windows. An evaluation harness reports per-detector
+precision/recall/F1 and a verbatim-grounding rate. **162 tests pass.**
+
+**The one thing still missing, and it is the important one: no independent accuracy figure.** The
+bundled gold set was self-authored, so its 1.000 F1 measures conformance, not accuracy. Converting
+an external corpus (PTC / BABE / Jin et al.) into `eval/gold/` is the highest-value remaining task
+— the harness is ready and it is now a data task, not a code task. All five known bugs are fixed. Environment is
 `.venv` on Python 3.10.10 with six packages.
 **Read `observe.md` §8 first** — it is the line-by-line build log for everything that now exists.
 Phases 1–3 are still unbuilt.
@@ -495,7 +502,19 @@ is research item F1, now a runnable experiment (`observe.md` §10.4).
 `feature_registry.py` gating · `argument_miner.py` · the Phase-2 feature layers · turning
 `expose_composite` on.
 
-### Phase 3 — batch and orchestration done, the rest still frozen
+### Phase 3 — entity detectors, evaluation, batch and orchestration done
+
+Done this phase: spaCy `en_core_web_sm` + VADER behind `EntityAnalyzer` (lazy: only built when a
+category needs it) · `scapegoating` and `card_stacking`, the two categories parked since Phase 2 ·
+`src/evaluation/evaluator.py` with a 40-example gold set in `eval/gold/annotations.jsonl`.
+
+**Design correction worth knowing:** `claudenew.md` §13.2 specifies scapegoating over ORG/NORP/GPE
+entities. spaCy only labels *proper* nouns, so "Muslims" is an entity and "migrants" is not — and
+unnamed groups are the commonest scapegoat targets in real reporting. A `group_terms` list on the
+category fills the gap; the blame phrase and two-distinct-sentence rules are unchanged
+(`observe.md` §11.3).
+
+### Batch and orchestration — done, the rest still frozen
 
 Done: `batch_processing/classify_batch.py` (single process) · `preprocess_ray.py` (tested, proven
 byte-identical to the single-process run) · `preprocess_spark.py` (written, needs a JVM) ·

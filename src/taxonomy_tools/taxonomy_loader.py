@@ -12,7 +12,12 @@ completely.
 from dataclasses import dataclass, field
 from typing import List, Dict, Any
 
-VALID_DETECTORS = ("lexicon", "regex", "regex_unless", "cooccurrence", "repetition")
+VALID_DETECTORS = ("lexicon", "regex", "regex_unless", "cooccurrence", "repetition",
+                   "entity_blame", "entity_sentiment_split")
+
+# Detectors that cannot run without the spaCy entity stage. The runner checks this to
+# decide whether to load spaCy at all -- a config with none of these stays fast.
+ENTITY_DETECTORS = ("entity_blame", "entity_sentiment_split")
 
 # which key holds the rules, per detector kind
 RULE_KEY = {
@@ -21,6 +26,8 @@ RULE_KEY = {
     "regex_unless": "patterns",
     "cooccurrence": "terms",
     "repetition": None,          # repetition is configured by numbers, not a rule list
+    "entity_blame": "terms",     # the blame phrases
+    "entity_sentiment_split": None,
 }
 
 
@@ -48,6 +55,15 @@ class Category:
     # repetition
     ngram_size: int = 3
     min_repeats: int = 3
+    # entity_blame / entity_sentiment_split
+    entity_labels: List[str] = field(default_factory=lambda: ["PERSON", "ORG", "NORP", "GPE"])
+    min_blamed_sentences: int = 2
+    # Group nouns spaCy will never tag, because NER only labels proper nouns.
+    group_terms: List[str] = field(default_factory=list)
+    positive_threshold: float = 0.5
+    negative_threshold: float = -0.5
+    min_entities: int = 2
+    min_mentions: int = 2
 
 
 @dataclass
@@ -64,6 +80,10 @@ class Taxonomy:
             if category.id == category_id:
                 return category
         raise KeyError("no such category: " + category_id)
+
+    def needs_entities(self) -> bool:
+        """True when at least one enabled category needs the spaCy stage."""
+        return any(c.detector in ENTITY_DETECTORS for c in self.categories)
 
     def families(self) -> Dict[str, List[str]]:
         grouped = {}
@@ -122,6 +142,13 @@ def load_taxonomy(conf: Dict[str, Any]) -> Taxonomy:
             max_words=int(raw.get("max_words", 15)),
             ngram_size=int(raw.get("ngram_size", 3)),
             min_repeats=int(raw.get("min_repeats", 3)),
+            entity_labels=raw.get("entity_labels", ["PERSON", "ORG", "NORP", "GPE"]),
+            min_blamed_sentences=int(raw.get("min_blamed_sentences", 2)),
+            group_terms=raw.get("group_terms", []),
+            positive_threshold=float(raw.get("positive_threshold", 0.5)),
+            negative_threshold=float(raw.get("negative_threshold", -0.5)),
+            min_entities=int(raw.get("min_entities", 2)),
+            min_mentions=int(raw.get("min_mentions", 2)),
         ))
 
     return Taxonomy(

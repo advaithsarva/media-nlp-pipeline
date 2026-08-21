@@ -13,7 +13,7 @@ is built, tested and working as of **2026-08-21**.
 
 **Working end to end:** a document goes in, a schema-validated JSON report comes out, every
 finding is a verbatim substring of the source at the character offsets given, and two runs
-produce byte-identical bytes. 125 tests pass.
+produce byte-identical bytes. 162 tests pass.
 
 ```
 git clone <this repo> && cd NLPpipline
@@ -38,9 +38,11 @@ Add `--save` to store the record where `output.type` in `conf/pipeline_v1.yaml` 
 | Ingestion | `.txt` proven end to end. `.md .pdf .docx .csv .tsv .json .jsonl .html .htm .xml` are wired into `EXTENSION_MAP` and import cleanly, but each needs its own library installed (`pdfplumber`, `python-docx`, `beautifulsoup4`, `pandas`) and none has been exercised. |
 | Preprocessing | Working. Tokenises with true character offsets and never rewrites the text. |
 | Segmentation | Working. pysbd, paragraph-first, exact offsets, handles hard-wrapped plain text. |
-| Detection | **21 categories** from `claudenew.md` §12.2/§13.2, across 5 detector kinds (lexicon, regex, regex-unless, co-occurrence, document-level repetition). Precision-first; every category has a passing false-positive test against neutral text and against properly-sourced writing. |
+| Entities | spaCy `en_core_web_sm` NER plus VADER per-entity sentiment, loaded lazily — only when a detector needs it. |
+| Detection | **23 categories** from `claudenew.md` §12.2/§13.2, across 7 detector kinds (lexicon, regex, regex-unless, co-occurrence, document-level repetition, entity-blame, entity-sentiment-split). Precision-first; every category has a passing false-positive test against neutral text and against properly-sourced writing. |
 | Scoring | Per-category scores, the severity/disruption model (§12.4) and six composites (§21). **No composite headline number is published** — the detectors are not calibrated, so `composite` is `null` and `expose_composite` defaults to false. The breakdowns are always published. |
 | Batch | `classify_batch` (single process) and `preprocess_ray` (distributed) — tested to produce identical output. A Spark job and an Airflow DAG are written but need a JVM and Linux respectively. |
+| Evaluation | `python -m evaluation.evaluator` gives per-detector precision/recall/F1 and a verbatim-grounding rate over `eval/gold/annotations.jsonl`. |
 | Output | `data_schema/output_schema.json`, validated on every run. Contains no timestamp, by design. |
 | Storage | JSONL and per-document JSON work with no extra dependencies; Parquet needs `pyarrow`. |
 | API | `/health`, `/analyze`, `/analyze/batch` on FastAPI. |
@@ -57,7 +59,18 @@ co-occur heavily, so the product saturates. On the sample article it returns **0
 implemented and `prop_score_method` selects; the default is a smooth-max, which returns 0.48 on
 the same evidence. See `observe.md` §10.4.
 
-Line-by-line notes on every module live in `observe.md` §8-§10.
+**No accuracy figure exists, and the harness says so.** The bundled 40-example gold set was
+written by the same person who wrote the detectors, so its 1.000 F1 measures whether each detector
+does what it was specified to do — a regression tripwire, not evidence that the specification
+matches human judgement. Getting a real number means converting SemEval-2020 Task 11 PTC, BABE or
+Jin et al. into the same JSONL shape; the loader already accepts it. Published state of the art for
+this task is F1 0.4-0.6.
+
+```
+PYTHONPATH=src .venv\Scripts\python.exe -m evaluation.evaluator --report eval/report.md
+```
+
+Line-by-line notes on every module live in `observe.md` §8-§11.
 
 ---
 

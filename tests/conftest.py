@@ -69,6 +69,20 @@ CATEGORY_EXAMPLES = {
         "We will take back control. The plan is sound. We will take back control of the "
         "borders. Critics disagree. We will take back control, he said again."
     ),
+    # These two need the spaCy entity stage, which build_doc runs when the taxonomy asks
+    # for it. Both need the pattern repeated across separate sentences, which is why the
+    # examples are longer than the rest.
+    "scapegoating": (
+        "Migrants are blamed for the housing shortage. The council met on Tuesday. "
+        "Migrants are also responsible for rising crime, the leader said. "
+        "Migrants caused the strain on hospitals too."
+    ),
+    "card_stacking": (
+        "Fairhaven Trust delivered an outstanding, wonderful result and its staff were "
+        "praised as excellent. Fairhaven Trust was celebrated again for its brilliant work. "
+        "Northgate Group produced a terrible failure and its staff were condemned. "
+        "Northgate Group was criticised again for its awful record."
+    ),
 }
 
 
@@ -100,10 +114,19 @@ def scorer(configs, taxonomy):
 
 
 @pytest.fixture(scope="session")
-def build_doc():
-    """Text in, a segmented and tokenised NormalizedDocument out."""
+def build_doc(taxonomy):
+    """Text in, a fully annotated NormalizedDocument out.
+
+    The entity stage runs only when the taxonomy contains a detector that needs it --
+    the same rule the real runner follows, so tests exercise the real path. Built once
+    per session because loading spaCy takes about a second.
+    """
     processor = TextProcessor()
     segmenter = SentenceSegmenter()
+    analyzer = None
+    if taxonomy.needs_entities():
+        from nlp_pipeline.entity_analysis import EntityAnalyzer
+        analyzer = EntityAnalyzer()
 
     def _build(text, document_id="test"):
         doc = NormalizedDocument(
@@ -112,6 +135,8 @@ def build_doc():
             tokens=processor._tokenize(text),
         )
         segmenter.segment(doc)
+        if analyzer is not None:
+            analyzer.analyze(doc)
         return doc
 
     return _build

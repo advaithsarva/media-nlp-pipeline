@@ -488,3 +488,81 @@ categories:
       - apparently
       - suggests
       - indicates
+
+  # --------------------------------------------- needs the spaCy entity stage
+
+  - id: scapegoating
+    name: "Scapegoating"
+    family: propaganda
+    description: >
+      One group blamed again and again, usually for several unrelated problems.
+      claudenew.md 13.2 gives the shape: for each ORG, NORP or GPE entity, count the
+      sentences that also carry a blame phrase, and flag when the same target is blamed in
+      two or more separate sentences. Distinct sentences, not mentions -- naming a group
+      three times in one sentence is one accusation.
+      Needs named entity recognition, which is why this sat parked until spaCy was added.
+      One thing the design did not anticipate: spaCy only labels *proper* nouns, so
+      "Muslims" and "France" are entities but "migrants" is not -- and unnamed groups are
+      the commonest scapegoat targets in real reporting. group_terms fills that gap by
+      naming them directly. The blame phrase and the two-sentence rule still apply, so
+      precision does not drop.
+    detector: entity_blame
+    base_confidence: 0.8
+    severity_weight: 0.9
+    disruption: 0.5
+    entity_labels: [ORG, NORP, GPE]
+    min_blamed_sentences: 2
+    terms:
+      - blame
+      - blamed
+      - blaming
+      - responsible for
+      - at fault
+      - fault of
+      - cause of
+      - caused
+      - ruined
+      - to blame for
+      - brought about
+      - driving up
+      - flooding
+
+    # Group nouns NER will never return. Deliberately generic categories of people, not
+    # slurs: the detector's job is to notice that one group is repeatedly blamed, whoever
+    # the group is.
+    group_terms:
+      - migrants
+      - immigrants
+      - refugees
+      - foreigners
+      - asylum seekers
+      - bankers
+      - landlords
+      - the unemployed
+      - benefit claimants
+      - protesters
+      - activists
+      - bureaucrats
+      - elites
+      - outsiders
+
+  - id: card_stacking
+    name: "Card Stacking"
+    family: bias
+    description: >
+      Only the favourable side presented -- one party described warmly throughout, the
+      other coldly. claudenew.md 13.2: build an entity-sentiment map and flag when the
+      warmest entity is above +0.5 and the coldest below -0.5. Both ends have to be
+      extreme; an article that is warm about everybody is not stacking the deck.
+      min_mentions guards the obvious failure, where one passing mention inside one emotive
+      sentence gets read as the article's whole stance on a subject.
+      Sentiment comes from VADER, a lexicon and a few rules -- no model, so it cannot drift.
+    detector: entity_sentiment_split
+    base_confidence: 0.8
+    severity_weight: 0.7
+    disruption: 0.4
+    entity_labels: [PERSON, ORG, NORP]
+    positive_threshold: 0.5
+    negative_threshold: -0.5
+    min_entities: 2
+    min_mentions: 2

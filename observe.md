@@ -1269,3 +1269,315 @@ config line reproduces it.
    reading.
 3. spaCy, if you want scapegoating and card stacking — they are the two nearest parked categories
    and the design for both is already written.
+
+---
+
+# 11. Build log — Phase 3 (same session, 2026-08-21)
+
+spaCy added, the two parked entity detectors built, and an evaluation harness so the project
+can finally measure itself.
+
+Detectors 21 → **23**. Detector kinds 5 → **7**. Tests 125 → **162**.
+
+---
+
+## 11.1 spaCy and VADER
+
+| Package | Version | What for | Why this one |
+|---|---|---|---|
+| `spacy` + `en_core_web_sm` | 3.8.15 / 3.8.0 | named entity recognition | the only realistic option for offline NER at 12MB |
+| `vaderSentiment` | latest | per-entity sentiment | **a lexicon and a handful of rules, not a model.** It cannot drift, which matters more here than accuracy would. |
+
+**Why VADER over the alternatives.** `claudenew.md` §13.2 uses TextBlob. TextBlob needs an NLTK
+corpus download, which is a second install step and a second thing to pin. A transformer
+sentiment model would score better and would also need a GPU budget, a pinned checkpoint, and a
+much longer answer to "why did it say that". VADER is a word list plus rules for negation,
+intensifiers and punctuation — you can read the whole thing, and it gives the same answer forever.
+
+**Is spaCy deterministic?** Yes, and it is worth being precise about why, because it is the first
+statistical model in the pipeline. Inference has no dropout and no sampling — the weights are
+frozen in a pinned package, so the same text produces the same entities every time. There is a
+test asserting exactly that (`test_the_same_text_gives_the_same_entities`). What is *not*
+guaranteed is stability across model **versions**, so `en_core_web_sm:3.8.0` is written into every
+document's metadata. A different model would find different entities, and the output has to say
+which one ran.
+
+---
+
+## 11.2 `src/nlp_pipeline/entity_analysis.py` — new stage
+
+| Code | What it does and why |
+|---|---|
+| `@property nlp` | spaCy is loaded on **first use**, then kept. Building it per document would dominate runtime. |
+| `spacy.load(..., disable=["parser", "lemmatizer"])` | only NER is needed. Skipping the dependency parser and lemmatizer makes it roughly three times faster. |
+| `extract_entities` | `ent.start_char` / `ent.end_char` are offsets into the exact string spaCy was handed — the same untouched document text everything else measures against. That is why an entity mention can be quoted as evidence like any other span. |
+| `_sentence_id_at(doc, position)` | maps an entity back to the sentence containing it, so evidence carries a sentence id like every other finding |
+| `_entity_key(text)` | lowercase and strip a leading article, so "The Northgate Group" and "northgate group" group together. **Crude on purpose** — real coreference (merging "the mayor" with "Lopez") is a far bigger problem than this stage is trying to solve, and half-attempting it would be worse than documenting the gap. |
+| `score_entity_sentiment` | VADER's compound score on each sentence an entity appears in, averaged |
+| the `sentence_scores` cache | a sentence with three entities is scored once, not three times |
+| `sorted(record["sentence_ids"])` | stored order must not depend on which mention happened to come first |
+| `entities.sort(key=start_char)` | canonical order, so two runs serialise identically |
+| `doc.metadata["entity_model"]` | the version stamp described above |
+
+**The honest limitation, written into the docstring:** sentiment is scored per *sentence*, not per
+entity. A sentence mentioning two entities contributes its score to both. That is why
+`card_stacking` requires a wide gap (+0.5 against −0.5) before it fires — the measure is noisy, so
+the threshold has to be far from zero.
+
+**Lazy by design.** `Taxonomy.needs_entities()` checks whether any category uses an entity
+detector; `PipelineRunner` only builds `EntityAnalyzer` if it does. A configuration without
+scapegoating or card stacking never pays the second of load time or the 50MB.
+
+---
+
+## 11.3 Scapegoating — and the thing the design got wrong
+
+`claudenew.md` §13.2 specifies: *for each ORG/NORP/GPE entity, count sentences containing blame
+phrases; flag when the count for the same target ≥ 2.*
+
+Built exactly that, ran it, and got **zero findings** on an obvious scapegoating example:
+
+```
+Migrants are blamed for the housing shortage.
+Migrants are also responsible for rising crime.
+Migrants caused the strain on hospitals too.
+```
+
+The cause, checked directly against spaCy:
+
+```
+"Migrants are blamed for the housing shortage..."   -> []
+"Immigrants and Muslims are blamed... France caused the delay."
+                                                    -> [('Muslims','NORP'), ('France','GPE')]
+```
+
+**NER only labels proper nouns.** "Muslims" and "France" are entities; "migrants" is a common
+noun and spaCy returns nothing at all. And unnamed groups — migrants, immigrants, benefit
+claimants, bankers, protesters — are precisely the most common scapegoat targets in real media
+coverage. The design's rule, followed literally, misses the majority of real cases.
+
+**Fix:** a `group_terms` list on the category. Candidate targets are now NER entities of the right
+labels **plus** regex matches of those group nouns. Everything else about the rule is unchanged —
+a blame phrase is still required, and the same target must still be blamed in **two or more
+distinct sentences**.
+
+| Guard | Why |
+|---|---|
+| blame phrase required in the sentence | mentioning a group repeatedly is not blaming it. Tested: three neutral "Migrants arrived / were housed / received classes" sentences produce nothing. |
+| **distinct sentences**, not mentions | "Migrants, migrants and migrants again are blamed" is one accusation, not three. Tested. |
+| min 2 | one accusation is reporting; a pattern of them is scapegoating. Tested. |
+
+The group list is deliberately generic categories of people, not slurs. The detector's job is to
+notice that one group is repeatedly blamed — whoever the group is.
+
+---
+
+## 11.4 Card stacking
+
+§13.2: *build an entity-sentiment map and flag when `max(avg_sentiment) > 0.5` and
+`min(avg_sentiment) < -0.5`.* Implemented as specified, with one addition.
+
+| Guard | Why |
+|---|---|
+| **both** ends must be extreme | an article warm about everybody is not stacking the deck. Tested with two organisations both described glowingly — silent. |
+| `min_mentions: 2` | **the addition.** One passing mention inside one emotive sentence is not an article's stance on a subject. Tested. |
+| `min_entities: 2` | there is no asymmetry with one subject |
+| both ends quoted as evidence | quoting only the warm mention would show a positive sentence with no hint of the cold one, and the asymmetry *is* the finding |
+| `max(scores, key=lambda k: (scores[k], k))` | the key breaks ties by name. Without it, two entities on identical scores would resolve by dict order and the output could differ between runs. |
+
+Verified against balanced reporting — "Fairhaven Trust reported a 4% rise / Northgate Group
+reported a 2% fall" — which stays silent.
+
+---
+
+## 11.5 A guard that caught its own new categories
+
+Adding the two categories made the suite fail immediately:
+
+```
+AssertionError: add an example to conftest.CATEGORY_EXAMPLES for:
+['scapegoating', 'card_stacking']
+```
+
+That is `test_every_category_has_an_example`, written in Phase 2, which reads the taxonomy rather
+than a hard-coded list. **A category cannot now be added without proving it fires.** The same
+applies to `test_nothing_fires_on_neutral_text` — every new category is automatically held to the
+false-positive standard without anyone remembering to add it.
+
+`tests/test_entity_analysis.py` adds 18 more: offset invariants, sentence mapping, determinism,
+the sentiment split, and negative cases for both detectors. Plus one that matters structurally —
+`test_entity_detectors_stay_quiet_without_the_entity_stage`. If the entity stage did not run, both
+detectors must produce **nothing**, not a guess from partial information.
+
+---
+
+## 11.6 `src/evaluation/evaluator.py` — measuring the detectors
+
+The project has been carrying an uncomfortable line since Phase 0: *these are guesses*. This is
+the machinery that turns them into numbers.
+
+```
+PYTHONPATH=src python -m evaluation.evaluator --report eval/report.md --json eval/results.json
+```
+
+| Code | What it does and why |
+|---|---|
+| `load_gold(path)` | JSONL, one example per line: `{id, text, categories, note}`. `//` comment lines are skipped so the file can document itself. |
+| a bad line reports its **line number** | a 500-line annotation file with one typo is otherwise miserable to debug |
+| `categories: []` | means "must produce nothing". These are the false-positive cases. |
+| `_counts_to_scores` | precision, recall, F1 from TP/FP/FN |
+| returning `None` for 0/0/0 | a detector never expected and never fired has not been measured. Scoring it 0 would drag the macro average down and misrepresent the system. |
+| macro average skips unmeasured detectors | same reason |
+| `verbatim` counter | re-slices the submitted text at every finding's offsets. **1.0 by construction for a rule engine** — and it is reported anyway, because it is the baseline an LLM extractor has to be compared against. This is the P1 research metric, already running. |
+| `unmeasured` list | names any detector with no gold example, so gaps are visible rather than silent |
+| `--fail-under` | non-zero exit if micro F1 drops below a floor. Ready for CI. |
+
+### `eval/gold/annotations.jsonl` — 40 examples
+
+**27 positive, 13 negative.** The negatives carry most of the value, because a detector that
+fires on everything scores perfect recall. They are written as *near misses* — the legitimate
+usage that most resembles the thing being detected:
+
+| Negative example | What it guards |
+|---|---|
+| "A devastating earthquake struck the region" | `devastating` used factually is not loaded language |
+| "Many respondents (37% of 2,400 surveyed)" | a quantifier with real numbers behind it |
+| "Professor Lin of Leeds University said" | named authority is proper sourcing |
+| "Applicants may either post the form or submit it online" | plain either/or is ordinary English |
+| "The familiar route was assessed by the assembly" | word-boundary trap: familiar/liar, assembly/ass |
+| "Migrants arrived... were housed... received classes" | repeated mention without blame |
+| "Fairhaven Trust reported a 4% rise / Northgate a 2% fall" | balanced coverage of two organisations |
+
+### The result, and why a perfect score is not good news
+
+```
+Exact match          40 / 40 = 1.000
+Micro precision      1.000
+Micro recall         1.000
+Micro F1             1.000
+Verbatim grounding   54 / 54 = 1.000
+Unmeasured detectors none
+```
+
+**This is the expected result, not a good one, and the report says so on its own face.** The
+labels and the detectors came from the same head on the same day. Agreement is close to circular.
+A conformance run cannot tell you whether the *specification* matches how a reader would judge an
+article — only whether the code matches the specification.
+
+The report generator now prints a warning block whenever micro F1 ≥ 0.999, so the number can
+never be quoted out of context. There is a test asserting that warning survives.
+
+What the harness **is** genuinely good for, starting now:
+
+1. **A regression tripwire.** Add a lexicon entry that starts firing on the Forth Bridge
+   paragraph and this drops below 1.0 and names the example. `test_the_gold_set_still_passes`
+   runs it on every `pytest`.
+2. **Machinery that is ready for real data.** The loader takes any file in this shape. Converting
+   SemEval-2020 Task 11 PTC, BABE or Jin et al. is the only remaining step to a number worth
+   quoting — and that is a data task, not a code task now.
+3. **The verbatim baseline is already measured.** 1.000 across 54 findings. That is the number
+   the P1 paper compares LLM extraction against, and it exists today.
+
+`tests/test_evaluation.py` adds 14 tests, half of them on the scorer's own arithmetic — a metric
+function with a bug is worse than no metric, because it produces confident wrong numbers.
+
+---
+
+## 11.7 Terminal log — Phase 3
+
+| # | Command | Purpose / result |
+|---|---|---|
+| 43 | `ls /c/Projects/` | `project.md` does not exist; the file is `PROJECTS.md` (144KB, 2,658 lines) |
+| 44 | `sed -n 302,410p PROJECTS.md` | read the existing NLPpipline section and the Google XYZ resume convention |
+| 45 | `PY -m pip install "spacy>=3.8" vaderSentiment` | spacy 3.8.15 |
+| 46 | `PY -m spacy download en_core_web_sm` | 12.8MB, en-core-web-sm 3.8.0 |
+| 47 | `PY -c "...nlp('Migrants are blamed...')"` | **`[]`** — the finding that reshaped the scapegoating detector |
+| 48 | `PY /tmp/entity_check.py` | scapegoating 0 spans, card_stacking 4 spans |
+| 49 | added `group_terms`, re-ran | scapegoating 3 spans, all verbatim |
+| 50 | `PY /tmp/fp_check.py` | four near-miss cases, all silent |
+| 51 | `PY -m pytest` | **1 failed** — the Phase 2 example guard caught the two new categories |
+| 52 | added examples + entity stage to `build_doc`, re-ran | 129 passed |
+| 53 | `PY -m pytest tests/test_entity_analysis.py` | 18 passed |
+| 54 | a `cat` heredoc for the gold set | **failed** — bash quoting again. Wrote the file directly. |
+| 55 | `PY -m evaluation.evaluator --report eval/report.md` | 40 examples, 1.000 across the board, 0 disagreements, 0 unmeasured |
+| 56 | `PY -m pytest` | **162 passed** |
+| 57 | `main.py` twice + `cmp` | still byte-identical with spaCy in the pipeline |
+
+---
+
+## 11.8 `C:\Projects\PROJECTS.md` updated
+
+You asked for "project.md in C:\Projects" — the file is `PROJECTS.md`. Four places changed:
+
+1. **The NLPpipline status block** — was "~15% built" with a list of what was broken. Now a
+   twelve-row state table, the PropScore finding, the three bugs the tests caught, and what is
+   deliberately unbuilt.
+2. **Resume bullets — written**, in the Google XYZ format the file requires. Two lead lines
+   (what the project *is*), six depth lines, and a two-line short version.
+3. **The resume-coverage table** — `❌ missing` → `✅ written`.
+4. **The table of contents and the "still incomplete" rows** — updated to match reality.
+
+**A warning is attached to the resume section, and it should stay there.** The file's own rule 3
+says *never claim a result the project cannot show*. This project has **no validated accuracy
+figure**: the gold set is self-authored, so its 1.000 F1 is conformance, not accuracy. Every
+bullet therefore claims engineering and measurement infrastructure — dependency reduction, the
+grounding invariant, the distributed-equivalence proof, the formula correction — all of which are
+verifiable by running the repo. None of them claims the system is *good at detecting bias*,
+because nothing has established that. Published state of the art for this task is F1 0.4–0.6;
+any figure above that should be treated as a bug until proven.
+
+---
+
+## 11.9 Where things stand
+
+| | Phase 0 | Phase 1 | Phase 2 | Phase 3 |
+|---|---|---|---|---|
+| Detectors | 5 | 5 | 21 | **23** |
+| Detector kinds | 2 | 2 | 5 | **7** |
+| NER / sentiment | — | — | — | **spaCy + VADER** |
+| Scoring | per-category | per-category | §21 formulas 1-4 + 6 composites | same |
+| Storage | — | JSONL/JSON/Parquet | same | same |
+| API | — | 3 endpoints | + severity/composites | same |
+| Batch | — | — | single + Ray + Spark | same |
+| Orchestration | — | — | Airflow DAG | same |
+| **Evaluation** | — | — | — | **40-example gold set, per-detector P/R/F1, verbatim rate** |
+| Tests | 43 | 61 | 125 | **162** |
+| Byte-identical reruns | yes | yes | yes | **yes, including spaCy** |
+
+Roughly 3,800 lines of source, 1,400 of tests, 900 of config and schema.
+
+### What is genuinely finished
+
+The product loop. A document goes in through any of twelve file types or over HTTP, gets analysed
+by 23 detectors, scored six ways with every breakdown published, validated against a JSON Schema,
+and written to JSONL, JSON or Parquet — single-process, across Ray workers, or on an Airflow
+schedule. Every claim in the output points at an exact substring of the source. Two runs produce
+identical bytes. 162 tests hold it in place.
+
+### What is genuinely not
+
+**Nothing has been validated against data anyone else labelled.** That single sentence covers the
+remaining gap, and no amount of further building closes it:
+
+| Open item | What it needs |
+|---|---|
+| **No accuracy figure** | SemEval-2020 Task 11 PTC, BABE, or Jin et al. converted into `eval/gold/`. The harness is ready; this is now a data task. |
+| **R8 literature review** | still unstarted, still the gate on the whole research track, still just reading |
+| `expose_composite` stays false | it flips the day there is a real evaluation set, and not before |
+| `lambda 4.0`, `beta 0.5`, `gamma 4.0` | hand-chosen. Fitting them is research item F2. |
+| 9 parked categories | an NLI model, sentence embeddings, other articles, or an external knowledge base |
+| Quoted speech not excluded | an article quoting *someone else's* loaded language still counts it against the article. Needs quotation-span detection. |
+| Coreference | "the mayor" and "Lopez" are two different entities to `_entity_key`. Limits both entity detectors. |
+| Only `.txt` exercised end to end | the other eleven readers import cleanly but none has been run on a real file |
+| Spark and Airflow unrun | need a JVM and Linux respectively |
+
+### Next, in order
+
+1. **Run it on real articles you have opinions about.** 23 detectors passing hand-written
+   examples proves the code works. It does not prove the detectors are right, and this is the
+   cheapest way to find out where they are not.
+2. **R8 literature review.** Reading, not coding. Can invalidate the research angle, so it should
+   happen before more is invested in it.
+3. **Convert one external corpus into `eval/gold/`.** That is the single highest-value remaining
+   task: it produces the first honest number, unlocks `expose_composite`, and turns R5's
+   "detector admission list" from a guess into evidence.

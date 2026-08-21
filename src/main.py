@@ -9,6 +9,9 @@ The stages, in order:
     InputRouter        file or string  -> InternalDocument
     TextProcessor      InternalDocument -> NormalizedDocument (tokens attached)
     SentenceSegmenter  adds sentences with exact character offsets
+    EntityAnalyzer     adds named entities and per-entity sentiment (only if a detector
+                       needs them -- loading spaCy costs a second, so it is skipped when
+                       the taxonomy has no entity-based category)
     RuleEngine         finds evidence spans
     ScoringEngine      turns spans into one score per category
     PostProcessor      builds the JSON record and checks it against the schema
@@ -31,6 +34,7 @@ from io_adapters.storage_clients import StorageClientFactory        # noqa: E402
 from taxonomy_tools.taxonomy_loader import load_taxonomy            # noqa: E402
 from nlp_pipeline.preprocessing import TextProcessor                # noqa: E402
 from nlp_pipeline.segmentation import SentenceSegmenter             # noqa: E402
+from nlp_pipeline.entity_analysis import EntityAnalyzer              # noqa: E402
 from nlp_pipeline.rules_engine import RuleEngine                    # noqa: E402
 from nlp_pipeline.scoring_engine import ScoringEngine               # noqa: E402
 from nlp_pipeline.postprocessing import PostProcessor               # noqa: E402
@@ -74,6 +78,11 @@ class PipelineRunner:
         self.router = InputRouter(self.pipeline_conf.get("input", {}))
         self.processor = TextProcessor(self.pipeline_conf.get("pipeline", {}))
         self.segmenter = SentenceSegmenter(self.pipeline_conf.get("segmentation", {}))
+        # Only built when the taxonomy actually contains an entity-based detector.
+        # Nothing else in the pipeline needs spaCy, so a config without scapegoating or
+        # card_stacking never pays for it.
+        self.entities = (EntityAnalyzer(self.pipeline_conf.get("entity_analysis", {}))
+                         if self.taxonomy.needs_entities() else None)
         self.rules = RuleEngine(self.taxonomy)
         self.scorer = ScoringEngine(self.scoring_conf, self.taxonomy)
         self.postprocessor = PostProcessor()
@@ -82,6 +91,8 @@ class PipelineRunner:
         document = self.router.route_push_input(raw_input)
         normalized = self.processor.normalize(document)
         self.segmenter.segment(normalized)
+        if self.entities is not None:
+            self.entities.analyze(normalized)
         result = self.rules.classify(normalized)
         scored = self.scorer.score(result, normalized)
 

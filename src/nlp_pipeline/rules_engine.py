@@ -28,7 +28,8 @@ from collections import Counter
 
 from nlp_pipeline.shared_types import EvidenceSpan, RuleClassificationResult, NormalizedDocument
 
-DETECTOR_KINDS = ("lexicon", "regex", "regex_unless", "cooccurrence", "repetition")
+DETECTOR_KINDS = ("lexicon", "regex", "regex_unless", "cooccurrence", "repetition",
+                  "entity_blame", "entity_sentiment_split")
 
 
 class RuleEngine:
@@ -99,6 +100,33 @@ class RuleEngine:
                     "kind": "repetition",
                     "ngram_size": cat.ngram_size,
                     "min_repeats": cat.min_repeats,
+                })
+
+            elif cat.detector == "entity_blame":
+                compiled.append({
+                    "category": cat,
+                    "rule_id": cat.id + ":entity_blame",
+                    "kind": "entity_blame",
+                    "pattern": self._lexicon_pattern(cat.terms),
+                    "entity_labels": tuple(cat.entity_labels),
+                    "min_blamed_sentences": cat.min_blamed_sentences,
+                    # spaCy only labels proper nouns, so "Muslims" and "France" are
+                    # entities but "migrants" is not. Unnamed groups are the commonest
+                    # scapegoat targets in real reporting, so they are supplied by name.
+                    "group_pattern": (self._lexicon_pattern(cat.group_terms)
+                                      if cat.group_terms else None),
+                })
+
+            elif cat.detector == "entity_sentiment_split":
+                compiled.append({
+                    "category": cat,
+                    "rule_id": cat.id + ":entity_sentiment_split",
+                    "kind": "entity_sentiment_split",
+                    "entity_labels": tuple(cat.entity_labels),
+                    "positive_threshold": cat.positive_threshold,
+                    "negative_threshold": cat.negative_threshold,
+                    "min_entities": cat.min_entities,
+                    "min_mentions": cat.min_mentions,
                 })
 
             else:
@@ -205,6 +233,101 @@ class RuleEngine:
             last_end = end
         return found
 
+    def _scan_entity_blame(self, doc, rule):
+        """Scapegoating: the same group blamed in several separate sentences.
+
+        claudenew.md 13.2 gives the shape -- for each ORG/NORP/GPE entity, count the
+        sentences that also contain a blame phrase, and flag when the count reaches two.
+        The threshold is deliberately about *distinct sentences*, not mentions: a single
+        sentence naming a group three times is one accusation, not three.
+
+        What is quoted as evidence is the entity mention itself, so the reader sees who
+        was blamed and can go and read the sentence around it.
+        """
+        # which sentences contain a blame phrase at all
+        blaming = set()
+        for sentence in doc.sentences:
+            if rule["pattern"].search(sentence.text):
+                blaming.add(sentence.sentence_id)
+        if not blaming:
+            return []
+
+        # Candidate targets are named entities of the right kind, plus the group nouns
+        # from the config. Both are collected as (start, end, sentence_id, key) so the
+        # rest of the rule does not care where a target came from.
+        targets = {}
+
+        for entity in doc.entities:
+            if entity.label in rule["entity_labels"] and entity.sentence_id in blaming:
+                key = " ".join(entity.text.lower().split())
+                targets.setdefault(key, []).append(
+                    (entity.start_char, entity.end_char, entity.sentence_id))
+
+        if rule["group_pattern"] is not None:
+            for sentence in doc.sentences:
+                if sentence.sentence_id not in blaming:
+                    continue
+                for match in rule["group_pattern"].finditer(sentence.text):
+                    key = match.group().lower()
+                    targets.setdefault(key, []).append((
+                        sentence.start_char + match.start(),
+                        sentence.start_char + match.end(),
+                        sentence.sentence_id,
+                    ))
+
+        found = []
+        for key in sorted(targets):
+            mentions = targets[key]
+            # distinct sentences, not mentions: naming a group three times in one
+            # sentence is one accusation, not three
+            if len({m[2] for m in mentions}) < rule["min_blamed_sentences"]:
+                continue
+            for start, end, sentence_id in mentions:
+                found.append(self._span(doc, doc.sentences[sentence_id], start, end, rule))
+        return found
+
+    def _scan_entity_sentiment_split(self, doc, rule):
+        """Card stacking: one side described warmly, the other coldly.
+
+        claudenew.md 13.2: build an entity-sentiment map and flag when the most positively
+        described entity is above +0.5 and the most negative below -0.5. Both ends must be
+        extreme -- an article that is warm about everyone is not stacking the deck.
+
+        min_mentions guards the obvious failure: one passing mention in one emotive
+        sentence is not evidence of how a whole article treats a subject.
+        """
+        if not doc.entity_sentiment:
+            return []
+
+        eligible = {
+            key: record for key, record in doc.entity_sentiment.items()
+            if record["label"] in rule["entity_labels"]
+            and record["mentions"] >= rule["min_mentions"]
+        }
+        if len(eligible) < rule["min_entities"]:
+            return []
+
+        scores = {k: r["average_sentiment"] for k, r in eligible.items()}
+        warmest = max(scores, key=lambda k: (scores[k], k))
+        coldest = min(scores, key=lambda k: (scores[k], k))
+
+        if scores[warmest] < rule["positive_threshold"]:
+            return []
+        if scores[coldest] > rule["negative_threshold"]:
+            return []
+
+        # Quote both ends. One span alone would show a warm mention with no hint of the
+        # cold one, and the asymmetry is the whole finding.
+        wanted = {warmest, coldest}
+        found = []
+        for entity in doc.entities:
+            key = " ".join(entity.text.lower().split())
+            if key in wanted and entity.sentence_id >= 0:
+                sentence = doc.sentences[entity.sentence_id]
+                found.append(self._span(doc, sentence, entity.start_char,
+                                        entity.end_char, rule))
+        return found
+
     def _sentence_at(self, doc, position):
         for sentence in doc.sentences:
             if sentence.start_char <= position < sentence.end_char:
@@ -220,8 +343,14 @@ class RuleEngine:
             if rule["category"].base_confidence < self.threshold:
                 continue    # the R2 gate: a detector below threshold never emits
 
+            # document-level detectors: these cannot work sentence by sentence, because
+            # the signal is a pattern across the whole document
             if rule["kind"] == "repetition":
                 spans.extend(self._scan_repetition(doc, rule))
+            elif rule["kind"] == "entity_blame":
+                spans.extend(self._scan_entity_blame(doc, rule))
+            elif rule["kind"] == "entity_sentiment_split":
+                spans.extend(self._scan_entity_sentiment_split(doc, rule))
             else:
                 for sentence in doc.sentences:
                     spans.extend(self._scan_sentence(doc, sentence, rule))

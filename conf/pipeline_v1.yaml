@@ -189,3 +189,15 @@ processing:
   checkpoint_enabled: true
   checkpoint_interval: 100  # Process every N items
 
+
+# Named entity recognition and per-entity sentiment.
+# Only loaded when the taxonomy contains a detector that needs it (scapegoating,
+# card_stacking). The model name is pinned and written into every output record: a
+# different spaCy model finds different entities, so the output has to say which one ran.
+entity_analysis:
+  spacy_model: "en_core_web_sm"
+  entity_labels:
+    - "PERSON"
+    - "ORG"
+    - "NORP"
+    - "GPE"

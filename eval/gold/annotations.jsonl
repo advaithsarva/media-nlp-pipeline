@@ -1,0 +1,49 @@
+// Gold set for detector evaluation. One JSON object per line.
+// {"id": ..., "text": ..., "categories": [...expected to fire...], "note": ...}
+// An empty categories list means the example MUST produce nothing. Those are the
+// false-positive cases and they carry most of the value here, because a detector that
+// fires on everything scores perfect recall.
+//
+// WRITTEN BY THE SAME PERSON WHO WROTE THE DETECTORS, so this is a conformance set, not
+// an independent evaluation. Replace it with SemEval-2020 Task 11 PTC, BABE or Jin et al.
+// converted to this shape to get a number worth quoting.
+{"id": "neutral_bridge", "text": "The Forth Bridge is a cantilever railway bridge across the Firth of Forth in the east of Scotland. Construction began in 1882 and the bridge opened on 4 March 1890. It carries about 190 trains each day and was designated a UNESCO World Heritage Site in 2015. All of the original rivets were driven by hand.", "categories": [], "note": "encyclopaedic prose"}
+{"id": "neutral_court", "text": "The court ruled on Tuesday that the contract was valid. Judge Alvarez said the evidence submitted by both parties met the required standard. An appeal must be filed within 28 days.", "categories": [], "note": "dry court report"}
+{"id": "neutral_earnings", "text": "Revenue rose to 4.2 billion pounds from 3.9 billion in 2023, a rise of 7.7 percent. Operating costs fell by 40 million compared with the previous year. The company employs 12,400 people.", "categories": [], "note": "figures with denominators and baselines"}
+{"id": "neutral_earthquake", "text": "A devastating earthquake struck the region at 03:14 local time. Emergency services reported 42 casualties and widespread structural damage. The Red Cross has opened three shelters.", "categories": [], "note": "devastating used factually; must not be loaded_language"}
+{"id": "neutral_sourced_expert", "text": "Professor Lin of Leeds University said the sample was representative. According to a 2021 study published in Nature, the effect size was small but consistent.", "categories": [], "note": "named authority; appeal_to_authority must stay quiet"}
+{"id": "neutral_quantified", "text": "Many respondents (37% of 2,400 surveyed) said they were dissatisfied. Most households in the sample reported no change since 2019.", "categories": [], "note": "quantifiers backed by real numbers"}
+{"id": "neutral_familiar", "text": "The familiar route was assessed by the assembly and the class was reclassified.", "categories": [], "note": "word-boundary trap: familiar/liar, assembly/ass"}
+{"id": "neutral_hedged_science", "text": "The results indicate a possible link, though the authors note the sample of 210 patients may not generalise. Further work could clarify the mechanism.", "categories": ["hedging"], "note": "honest hedging; style only, never manipulation"}
+{"id": "loaded_single", "text": "The council called the decision a disastrous and shameful retreat from its promises.", "categories": ["loaded_language"], "note": ""}
+{"id": "name_calling_single", "text": "The minister is a liar and a charlatan, the opposition leader told the chamber.", "categories": ["name_calling"], "note": ""}
+{"id": "glittering_slogan", "text": "Freedom, justice and prosperity for every family!", "categories": ["glittering_generalities"], "note": "short slogan, three virtue words"}
+{"id": "glittering_explained", "text": "We need economic justice because the disparities recorded since 2008 have widened by 14 points across every income band in the study.", "categories": [], "note": "one virtue word inside an explanation is not a slogan"}
+{"id": "fear_appeal", "text": "This is an existential threat and the country faces annihilation if the bill passes.", "categories": ["appeal_to_fear"], "note": ""}
+{"id": "whataboutism_deflect", "text": "The audit found 14 accounting errors. What about the previous administration?", "categories": ["whataboutism"], "note": ""}
+{"id": "cliche_closer", "text": "The scheme failed and cost 30 million. It is what it is.", "categories": ["thought_terminating_cliche"], "note": ""}
+{"id": "gaslighting_phrases", "text": "You are imagining things and that never happened, the spokesman told reporters.", "categories": ["gaslighting"], "note": "flagged even though it is a quotation"}
+{"id": "guilt_association", "text": "The campaign group has ties to terrorists, the column argued without evidence.", "categories": ["guilt_by_association"], "note": ""}
+{"id": "guilt_hitler", "text": "He is the next Hitler, the pamphlet declared.", "categories": ["guilt_by_association"], "note": "reductio ad Hitlerum"}
+{"id": "bandwagon_everyone", "text": "Everyone knows the plan will work, the campaign insisted.", "categories": ["bandwagon"], "note": ""}
+{"id": "false_dilemma_nochoice", "text": "There is no other choice; we have no choice but to sign the agreement today.", "categories": ["false_dilemma"], "note": ""}
+{"id": "false_dilemma_ordinary_either", "text": "Applicants may either post the form or submit it online before 31 March.", "categories": ["hedging"], "note": "plain either/or is ordinary English; only the hedge word may fire"}
+{"id": "no_true_scotsman", "text": "No true patriot would question the defence budget.", "categories": ["no_true_scotsman"], "note": ""}
+{"id": "burden_shift", "text": "No one has ever proven the claim false, so prove me wrong.", "categories": ["burden_of_proof"], "note": ""}
+{"id": "motive_attack", "text": "He only says this because he has a vested interest in the outcome.", "categories": ["motive_fallacy"], "note": ""}
+{"id": "slippery_slope", "text": "This will inevitably lead to chaos and opens the floodgates to far worse.", "categories": ["slippery_slope"], "note": ""}
+{"id": "anecdote_as_proof", "text": "A friend of mine lost their job last spring, which proves the policy has failed.", "categories": ["anecdotal_evidence"], "note": ""}
+{"id": "anecdote_with_data", "text": "A friend of mine lost their job, and the survey of 1,200 workers found the same according to the department.", "categories": [], "note": "anecdote alongside real data is not the fallacy"}
+{"id": "unsupported_many", "text": "Many people are unhappy and every single voter agrees with the change.", "categories": ["unsupported_quantifier"], "note": ""}
+{"id": "vague_authority", "text": "Experts say the measure is safe and research shows it works.", "categories": ["appeal_to_authority"], "note": "no name, no institution, no publication"}
+{"id": "opaque_sources", "text": "Sources say the deal is done, and critics claim the terms were altered overnight.", "categories": ["source_opaqueness"], "note": ""}
+{"id": "stat_no_baseline", "text": "Support surged by 300% and the campaign hit a record high this week.", "categories": ["statistical_manipulation"], "note": "percentage with no denominator or window"}
+{"id": "repetition_slogan", "text": "We will take back control. The plan is sound. We will take back control of the borders. Critics disagree. We will take back control, he said again.", "categories": ["repetition"], "note": "four-gram three times"}
+{"id": "scapegoat_unnamed_group", "text": "Migrants are blamed for the housing shortage. The council met on Tuesday. Migrants are also responsible for rising crime, the leader said. Migrants caused the strain on hospitals too.", "categories": ["scapegoating"], "note": "group noun spaCy does not tag; needs group_terms"}
+{"id": "scapegoat_named_group", "text": "Muslims are blamed for the unrest by the newspaper. The weather stayed dry all week. Muslims are responsible for the tension, the column argued.", "categories": ["scapegoating"], "note": "NORP entity from spaCy NER"}
+{"id": "scapegoat_single_mention", "text": "Migrants are blamed by some residents for the housing shortage. The council approved 400 new homes on Tuesday and building starts in March.", "categories": [], "note": "one accusation is reporting, not a pattern"}
+{"id": "scapegoat_no_blame", "text": "Migrants arrived in the county in March. Migrants were housed in three centres. Migrants received language classes from the council.", "categories": [], "note": "repeated mention without blame is not scapegoating"}
+{"id": "card_stacking_split", "text": "Fairhaven Trust delivered an outstanding, wonderful result and its staff were praised as excellent. Fairhaven Trust was celebrated again for its brilliant work. Northgate Group produced a terrible failure and its staff were condemned. Northgate Group was criticised again for its awful record.", "categories": ["card_stacking"], "note": "warm/cold split across two organisations"}
+{"id": "card_stacking_both_warm", "text": "Fairhaven Trust delivered an outstanding result and staff were praised. Northgate Group also produced an excellent, wonderful outcome. Fairhaven Trust was celebrated again. Northgate Group was praised again.", "categories": [], "note": "warm about everyone is not stacking the deck"}
+{"id": "card_stacking_balanced", "text": "Fairhaven Trust reported a 4% rise in admissions. Northgate Group reported a 2% fall. Fairhaven Trust said the figures matched forecasts. Northgate Group declined to comment on the quarter.", "categories": [], "note": "balanced coverage of two organisations"}
+{"id": "multi_signal_opinion", "text": "Everyone knows the scheme was disastrous. Sources say the mayor is a liar. What about the last government? There is no other choice.", "categories": ["bandwagon", "loaded_language", "source_opaqueness", "name_calling", "whataboutism", "false_dilemma"], "note": "six signals in one short piece"}
