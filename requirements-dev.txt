@@ -19,6 +19,9 @@ elasticsearch==9.2.0
 emoji==2.15.0
 exceptiongroup==1.3.1
 et-xmlfile==2.0.0
+# vector_index.py's exact-search backend; falls back to an equivalent numpy
+# implementation when this is not installed, so it is not a hard runtime requirement
+faiss-cpu==1.15.0
 fastapi==0.122.0
 flake8==7.3.0
 h11==0.16.0
@@ -49,6 +52,9 @@ platformdirs==4.5.0
 pluggy==1.6.0
 preshed==3.0.12
 pyarrow==22.0.0
+# only needed to build src/core_accelerators/ (cmake --build); the compiled extension
+# is optional at runtime -- see nlp_pipeline/native_accel.py
+pybind11==3.1.0
 pycodestyle==2.14.0
 pydantic==2.12.5
 pydantic_core==2.41.5

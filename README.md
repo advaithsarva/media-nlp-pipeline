@@ -52,7 +52,12 @@ Add `--save` to store the record where `output.type` in `conf/pipeline_v1.yaml` 
 | Output | `data_schema/output_schema.json`, validated on every run. Contains no timestamp, by design. |
 | Storage | JSONL and per-document JSON work with no extra dependencies; Parquet needs `pyarrow`. |
 | API | `/health`, `/analyze`, `/analyze/batch` on FastAPI. |
-| Not built | feature layers, ML classifier, hybrid router, embeddings, FAISS, ontology graph, the non-file ingestion adapters, the C++/CUDA accelerators. Nine detector categories are parked because they need NLI, embeddings, other articles or an external knowledge base; each is named with its reason in the header of `conf/taxonomy_v1.yaml`. |
+| Ingestion, non-file | `io_adapters/ingest_clients.py` implements APIClient, ESClient, S3Client, KafkaClient, ScraperClient and RedisClient; `InputRouter.route_pull_source` dispatches to whichever `input.sources.*.enabled` flags are set in `pipeline_v1.yaml`. Off by default, same as the file source used to be alone. |
+| Feature layers, ML classifier, hybrid router | Built as standalone, unit-tested components (`nlp_pipeline/features.py`, `ml_classifier.py`, `hybrid_router.py`) but **not wired into `PipelineRunner`**: the documented working path above stays rules-only. `FeatureExtractor` produces numeric signals only (never a quoted span — that stays `RuleEngine`'s job); `MLClassifier` is a true no-op with no model file, since `models/` ships nothing; `HybridRouter` lets rules and ML confidence blend without ever letting ML fabricate evidence. Wiring this into the default run is a scoring/output-schema decision, not a code one, and is left for whoever calibrates the detectors against a labelled set. |
+| Embeddings, FAISS | `nlp_pipeline/embeddings_onnx.py` defaults to a deterministic hashing embedding (no model download needed) and uses a real ONNX encoder if one is configured and present. `nlp_pipeline/vector_index.py` does exact (not approximate) cosine search via `faiss.IndexFlatIP`, with a numpy fallback when `faiss` is not installed. Read-only semantic memory, same as the architecture diagram below — never an input to `ScoringEngine`. |
+| Ontology graph | `nlp_pipeline/ontology_graph.py` — a networkx DAG of `taxonomy → family → category` built straight from `conf/taxonomy_v1.yaml`. Ancestor/descendant lookups, label validation, and rolling a set of category labels up to their families. |
+| C++ CPU accelerators | `src/core_accelerators/` — a pybind11 extension (`text_ops.cpp`, `nlp_accel.cpp`) with a fast tokenizer and n-gram counter, built via its `CMakeLists.txt`. Optional: `nlp_pipeline/native_accel.py` falls back to pure Python when the extension is not compiled, and is not wired into `preprocessing.py`'s offset-critical tokenizer — see that module's docstring for the one documented case (a handful of rare Unicode number categories) where the native and Python tokenizers can disagree. |
+| Not built | GPU/CUDA acceleration (`src/gpu_support/`) — deliberately out of scope. Nine detector categories are still parked because they need NLI, embeddings *as a detector input*, other articles or an external knowledge base; each is named with its reason in the header of `conf/taxonomy_v1.yaml`. |
 
 Scores are **uncalibrated**. No labelled evaluation set has been used, so the numbers describe how
 much evidence was found, not how biased a piece is. Determinism is an audit property: it proves a
@@ -264,8 +269,8 @@ media-nlp-pipeline/
 │   │   ├── postprocessing.py        # Schema alignment, span offsets, version stamps
 │   │   ├── embeddings_onnx.py       # ONNX sentence embeddings (MiniLM / SentenceTransformers)
 │   │   ├── vector_index.py          # FAISS index (upsert / search)
-│   │   ├── gpu_router.py            # CPU vs CUDA path selection (routes to gpu_support/)
 │   │   ├── deterministic_utils.py   # Seeding, hashing, config version stamping
+│   │   ├── native_accel.py          # Optional pybind11 acceleration; pure-Python fallback
 │   │   └── extras.py                # Summarization (optional)
 │   │
 │   ├── taxonomy_tools/
@@ -278,19 +283,24 @@ media-nlp-pipeline/
 │   │   ├── file_readers.py          # Per-format readers (TXT, PDF, DOCX, CSV, JSON, HTML…)
 │   │   ├── ingest_clients.py        # All pull adapters: APIClient, ESClient, KafkaClient,
 │   │   │                            #   S3Client, ScraperClient, RedisClient
-│   │   ├── storage_clients.py       # All writers: ParquetWriter, JSONLWriter, RedisWriter,
-│   │   │                            #   LocalStorageWriter, StorageClientFactory
-│   │   └── shared_types.py          # Duplicate stub — real types live in core/
+│   │   └── storage_clients.py       # All writers: ParquetWriter, JSONLWriter, RedisWriter,
+│   │                                #   LocalStorageWriter, StorageClientFactory
+│   │                                # (no shared_types.py here: ingest_clients.py and
+│   │                                #   input_router.py both import InternalDocument
+│   │                                #   straight from core/ — one set of types, not two)
 │   │
-│   ├── core_accelerators/           # C++ CPU acceleration (stub — not yet implemented)
-│   │   ├── text_ops.cpp / .h        # Heavy text ops: normalization, prefix scans
-│   │   ├── nlp_accel.cpp            # Higher-level NLP acceleration
-│   │   ├── bindings.cpp             # PyBind11 bridge → Python
-│   │   └── CMakeLists.txt           # CMake build config
+│   ├── core_accelerators/           # C++ CPU acceleration — built, optional at runtime
+│   │   ├── text_ops.cpp / .h        # Fast tokenizer: bit-identical to preprocessing.py's
+│   │   │                            #   regex on realistic text; documented gap on rare
+│   │   │                            #   Unicode number categories, see the file's comment
+│   │   ├── nlp_accel.cpp / .h       # N-gram counting (accelerates RuleEngine's repetition
+│   │   │                            #   detector) and lexicon-membership counting
+│   │   ├── bindings.cpp             # PyBind11 bridge → the `_core_accelerators` extension
+│   │   ├── __init__.py              # Re-exports it as `core_accelerators`, degrading
+│   │   │                            #   gracefully (NATIVE_BUILT = False) when unbuilt
+│   │   └── CMakeLists.txt           # `cmake -S src/core_accelerators -B .../build`
 │   │
-│   ├── gpu_support/                 # CUDA GPU acceleration (stub — not yet implemented)
-│   │   ├── cuda_ops.cu / .h         # CUDA kernels: batched similarity, vector ops
-│   │   └── bindings.cpp             # PyBind11 bridge → Python
+│   ├── gpu_support/                 # CUDA GPU acceleration — not built, out of scope
 │   │
 │   ├── batch_processing/
 │   │   ├── classify_batch.py        # Batch classification entry point
@@ -340,8 +350,8 @@ media-nlp-pipeline/
 | `src/taxonomy_tools/` | Taxonomy intelligence — load, version, suggest | Support |
 | `src/api/` | Serving layer — FastAPI for real-time document analysis | ← Out |
 | `src/batch_processing/` | Batch layer — Spark / Ray for large-scale runs | ← Out |
-| `src/core_accelerators/` | CPU acceleration — C++ SIMD ops (stubbed) | Internal |
-| `src/gpu_support/` | GPU acceleration — CUDA kernels (stubbed) | Internal |
+| `src/core_accelerators/` | CPU acceleration — C++/pybind11, optional at runtime | Internal |
+| `src/gpu_support/` | GPU acceleration — CUDA kernels (not built, out of scope) | Internal |
 | `airflow_dags/` | Orchestration — schedules batch jobs, does not process data | Schedule |
 | `notebooks/` | **Research only** — not imported by any production code | Offline |
 | `models/` | Trained artifacts — ONNX + pkl files loaded at runtime | Loaded |
@@ -491,12 +501,26 @@ Assembles the final output JSON:
 - Version stamps: pipeline, taxonomy, scoring
 - Pydantic validation against `data_schema/output_schema.json`
 
-### Acceleration Layer (Stubbed — not yet implemented)
+### Acceleration Layer
 
-Files exist but contain only 1-line comment stubs. Wire up when pipeline performance becomes a bottleneck after the core logic is working.
-
-- **`src/core_accelerators/`** — C++ / SIMD path for heavy token operations (normalization, prefix scans). Exposed to Python via PyBind11 + CMake.
-- **`src/gpu_support/`** — CUDA kernels for parallel feature extraction or vector ops. `gpu_router.py` decides at runtime whether to use this path based on device availability.
+- **`src/core_accelerators/`** — built. A pybind11 extension (`text_ops.cpp`, `nlp_accel.cpp`) with a
+  from-scratch tokenizer bound for `preprocessing.py`'s `TOKEN_PATTERN` and an n-gram counter for
+  `RuleEngine`'s repetition detector. Build it with:
+  ```
+  pip install pybind11
+  cmake -S src/core_accelerators -B src/core_accelerators/build
+  cmake --build src/core_accelerators/build
+  ```
+  `nlp_pipeline/native_accel.py` imports the compiled extension when present and falls back to
+  pure Python otherwise (`NATIVE_AVAILABLE` says which); nothing in the pipeline requires the build
+  step, and the extension is not wired into `preprocessing.py` itself — see that module's docstring
+  for the one documented case (a handful of rare Unicode number categories: circled digits,
+  superscripts, Roman numeral symbols) where the native and Python tokenizers can disagree.
+  `tests/test_native_accel.py` fuzzes the two against each other on realistic text and skips its
+  native-only tests when the extension has not been built.
+- **`src/gpu_support/`** — not built, deliberately out of scope for this pass. CUDA kernels for
+  parallel feature extraction or vector ops, selected at runtime the same way the CPU accelerator
+  is (`NATIVE_AVAILABLE`-style detection), would go here.
 
 ### Pipeline Orchestration — `main.py` target design
 
@@ -852,11 +876,11 @@ The pipeline is designed for controlled evolution. Extending any stage does not 
 |---|---|
 | `feature_registry.py` | Add new taxonomy class → feature layer mappings in YAML |
 | `argument_miner.py` | Swap argument mining model (spaCy → fine-tuned transformer) |
-| `features.py` | Add feature category classes; swap TF-IDF → transformer embeddings |
+| `features.py` | Add a feature layer class with a `compute(doc) -> Dict[str, float]` method, list it in `feature_config["layers"]` |
 | `rules_engine.py` | Add rule sets via `taxonomy_v1.yaml` — no code changes |
-| `ml_classifier.py` | Swap any sklearn-compatible or ONNX-exported model |
-| `hybrid_router.py` | Adjust blend weight `α` in config; add tie-breaking logic |
-| `gpu_router.py` | Route heavy ops to CUDA path when available |
+| `ml_classifier.py` | Swap any sklearn-compatible (`.joblib`) or ONNX-exported (`.onnx`) model |
+| `hybrid_router.py` | Adjust blend weight `α` / `confidence_threshold` in config; add tie-breaking logic |
+| `core_accelerators/` | Add more pybind11-bound functions for hot loops; `gpu_support/` is the equivalent extension point for a future CUDA path |
 | `taxonomy_suggestions.py` | Wire to annotation tooling or active-learning loop |
 | `io_adapters/storage_clients.py` | Add SQL serving DB, new cloud targets, message queues |
 | `io_adapters/ingest_clients.py` | Add new pull sources |
