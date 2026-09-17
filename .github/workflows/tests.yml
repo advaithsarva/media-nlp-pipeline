@@ -16,6 +16,10 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-          cache-dependency-path: requirements-dev.txt
-      - run: pip install -r requirements-dev.txt
+          cache-dependency-path: pyproject.toml
+      # requirements-dev.txt is a pip freeze of a whole environment and is not
+      # resolvable: it pins fastapi==0.122.0 while apache-airflow-core 3.1.5
+      # requires fastapi<0.118.0. pyproject.toml is the real dependency list.
+      - run: pip install -e ".[adapters,dev]"
+      - run: python -m spacy download en_core_web_sm
       - run: python -m pytest -q
