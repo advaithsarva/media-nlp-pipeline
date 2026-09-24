@@ -54,6 +54,25 @@ EXTENSION_MAP = {
 # they were written separately; this list is the one place that difference is absorbed.
 TEXT_KEYS = ("raw_content", "full_raw_text", "extracted_text", "plain_text", "text", "content")
 
+# config key under input.sources -> the ingest_clients.py class that pulls from it. Kept
+# as a mapping from string to class rather than importing every client at module load
+# time, because each client's own library (boto3, kafka, redis, elasticsearch, bs4) is
+# itself imported lazily inside that client -- see ingest_clients.py's module docstring.
+# Importing the classes here is cheap (no network library import happens until `.fetch`
+# actually runs), so this dict can live at module scope.
+from io_adapters.ingest_clients import (               # noqa: E402
+    APIClient, ESClient, S3Client, KafkaClient, ScraperClient, RedisClient,
+)
+
+PULL_CLIENTS = {
+    "api": APIClient,
+    "es": ESClient,
+    "s3": S3Client,
+    "kafka": KafkaClient,
+    "scrap": ScraperClient,
+    "redis": RedisClient,
+}
+
 
 class InputRouter:
     def __init__(self, config: Optional[Dict[str, Any]] = None):
@@ -88,13 +107,30 @@ class InputRouter:
         raise InvalidInputError("cannot route input of type " + type(payload).__name__)
 
     def route_pull_source(self) -> Iterator[InternalDocument]:
-        """Go and fetch. Only the local-files source is wired up; the rest are off in config."""
-        if not self.file_config.get("enabled", False):
-            return
-        directory = self.file_config.get("path", "data/raw")
-        pattern = self.file_config.get("glob_pattern", "*.txt")
-        for document in self.process_directory(directory, pattern):
-            yield document
+        """Go and fetch from every source `pipeline_v1.yaml` has switched on.
+
+        Local files were the first source built and stay the default. Each of the other
+        sources (api, es, s3, kafka, scrap, redis) is off unless its own
+        `input.sources.<name>.enabled: true` is set, so enabling this method's reach into
+        the network is always an explicit, per-source opt-in -- turning on the files
+        source can never accidentally also start polling an API.
+        """
+        sources = self.config.get("sources", {})
+
+        if self.file_config.get("enabled", False):
+            directory = self.file_config.get("path", "data/raw")
+            pattern = self.file_config.get("glob_pattern", "*.txt")
+            for document in self.process_directory(directory, pattern):
+                yield document
+
+        # sorted: dispatch order must not depend on dict iteration order
+        for name in sorted(PULL_CLIENTS):
+            source_config = sources.get(name, {})
+            if not source_config.get("enabled", False):
+                continue
+            client = PULL_CLIENTS[name](source_config)
+            for document in client.fetch(source_config):
+                yield document
 
     def process_directory(self, directory, pattern: str = "*.txt") -> Iterator[InternalDocument]:
         folder = Path(directory)
