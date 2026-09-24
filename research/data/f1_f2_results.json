@@ -1,0 +1,100 @@
+{
+  "prop_score_noisy_or": {
+    "train_fitted_threshold": 0.01,
+    "train_f1_at_threshold": 0.04913456169737577,
+    "test": {
+      "threshold": 0.01,
+      "precision": 0.9090909090909091,
+      "recall": 0.03577817531305903,
+      "f1": 0.06884681583476764,
+      "tp": 20,
+      "fp": 2,
+      "fn": 539,
+      "tn": 439
+    },
+    "mean_value_train": 0.007426870706754817,
+    "mean_value_test": 0.009541053099511511
+  },
+  "prop_score_smooth_max": {
+    "train_fitted_threshold": 0.01,
+    "train_f1_at_threshold": 0.04913456169737577,
+    "test": {
+      "threshold": 0.01,
+      "precision": 0.9090909090909091,
+      "recall": 0.03577817531305903,
+      "f1": 0.06884681583476764,
+      "tp": 20,
+      "fp": 2,
+      "fn": 539,
+      "tn": 439
+    },
+    "mean_value_train": 0.007426870706754817,
+    "mean_value_test": 0.009541053099511511
+  },
+  "additive_manipulation": {
+    "train_fitted_threshold": 0.01,
+    "train_f1_at_threshold": 0.08026030368763556,
+    "test": {
+      "threshold": 0.01,
+      "precision": 0.8205128205128205,
+      "recall": 0.057245080500894455,
+      "f1": 0.10702341137123744,
+      "tp": 32,
+      "fp": 7,
+      "fn": 527,
+      "tn": 434
+    }
+  },
+  "span_level": {
+    "train": {
+      "precision": 0.10309278350515463,
+      "recall": 0.013550135501355014,
+      "f1": 0.02395209580838323,
+      "tp": 40,
+      "fp": 348,
+      "fn": 2912
+    },
+    "test": {
+      "precision": 0.10687022900763359,
+      "recall": 0.014814814814814815,
+      "f1": 0.026022304832713755,
+      "tp": 14,
+      "fp": 117,
+      "fn": 931
+    }
+  },
+  "f2_fitting": {
+    "hand_chosen": {
+      "lambda": 4.0,
+      "beta": 0.5,
+      "gamma": 4.0
+    },
+    "fitted_on_train": {
+      "lambda": 1.0,
+      "beta": 0.0,
+      "gamma": 1.0,
+      "threshold": 0.05,
+      "f1": 0.04913456169737577
+    },
+    "fitted_test_score": {
+      "threshold": 0.05,
+      "precision": 0.9090909090909091,
+      "recall": 0.03577817531305903,
+      "f1": 0.06884681583476764,
+      "tp": 20,
+      "fp": 2,
+      "fn": 539,
+      "tn": 439
+    },
+    "hand_chosen_test_score": {
+      "threshold": 0.01,
+      "precision": 0.9090909090909091,
+      "recall": 0.03577817531305903,
+      "f1": 0.06884681583476764,
+      "tp": 20,
+      "fp": 2,
+      "fn": 539,
+      "tn": 439
+    }
+  }
+}
