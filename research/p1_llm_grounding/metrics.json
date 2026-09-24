@@ -1,0 +1,38 @@
+{
+  "flashlite_main": {
+    "n_responses": 50,
+    "n_parse_failed": 0,
+    "n_quotes": 126,
+    "verbatim_rate": 0.9841269841269841,
+    "normalized_rate": 0.9920634920634921,
+    "offset_accuracy": 0.015873015873015872,
+    "offset_checkable_rate": 1.0,
+    "failure_taxonomy": {
+      "paraphrase_or_merged_span": 1,
+      "boundary_or_punctuation_drift": 1
+    }
+  },
+  "qwen_main": {
+    "n_responses": 27,
+    "n_parse_failed": 4,
+    "n_quotes": 56,
+    "verbatim_rate": 0.375,
+    "normalized_rate": 0.9285714285714286,
+    "offset_accuracy": 0.0,
+    "offset_checkable_rate": 1.0,
+    "failure_taxonomy": {
+      "boundary_or_punctuation_drift": 31,
+      "paraphrase_or_merged_span": 4
+    }
+  },
+  "flashlite_instability": {
+    "n_passages": 20,
+    "n_unstable": 12,
+    "instability_rate": 0.6
+  },
+  "qwen_instability": {
+    "n_passages": 2,
+    "n_unstable": 0,
+    "instability_rate": 0.0
+  }
+}
