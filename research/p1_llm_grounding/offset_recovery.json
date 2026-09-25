@@ -18,20 +18,20 @@
     "ambiguous_rate_of_recovered": 0.0
   },
   "groq_main": {
-    "n_quotes": 99,
-    "n_recovered_exact": 97,
+    "n_quotes": 153,
+    "n_recovered_exact": 151,
     "n_recovered_normalized_fallback": 1,
     "n_unrecoverable": 1,
-    "recovery_rate": 0.98989898989899,
+    "recovery_rate": 0.9934640522875817,
     "n_ambiguous_multi_occurrence": 1,
-    "ambiguous_rate_of_recovered": 0.01020408163265306
+    "ambiguous_rate_of_recovered": 0.006578947368421052
   },
   "groq20b_main": {
-    "n_quotes": 32,
-    "n_recovered_exact": 32,
+    "n_quotes": 58,
+    "n_recovered_exact": 57,
     "n_recovered_normalized_fallback": 0,
-    "n_unrecoverable": 0,
-    "recovery_rate": 1.0,
+    "n_unrecoverable": 1,
+    "recovery_rate": 0.9827586206896551,
     "n_ambiguous_multi_occurrence": 0,
     "ambiguous_rate_of_recovered": 0.0
   }

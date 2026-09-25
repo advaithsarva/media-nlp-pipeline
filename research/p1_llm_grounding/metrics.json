@@ -27,11 +27,11 @@
   },
   "groq_main": {
     "n_responses": 50,
-    "n_parse_failed": 27,
-    "n_quotes": 99,
-    "verbatim_rate": 0.9797979797979798,
-    "normalized_rate": 0.98989898989899,
-    "offset_accuracy": 0.5555555555555556,
+    "n_parse_failed": 13,
+    "n_quotes": 153,
+    "verbatim_rate": 0.9869281045751634,
+    "normalized_rate": 0.9934640522875817,
+    "offset_accuracy": 0.5294117647058824,
     "offset_checkable_rate": 1.0,
     "failure_taxonomy": {
       "cross_sentence_splice_or_partial_match": 1,
@@ -40,13 +40,15 @@
   },
   "groq20b_main": {
     "n_responses": 50,
-    "n_parse_failed": 41,
-    "n_quotes": 32,
-    "verbatim_rate": 1.0,
-    "normalized_rate": 1.0,
-    "offset_accuracy": 0.03225806451612903,
-    "offset_checkable_rate": 0.96875,
-    "failure_taxonomy": {}
+    "n_parse_failed": 35,
+    "n_quotes": 58,
+    "verbatim_rate": 0.9827586206896551,
+    "normalized_rate": 0.9827586206896551,
+    "offset_accuracy": 0.03508771929824561,
+    "offset_checkable_rate": 0.9827586206896551,
+    "failure_taxonomy": {
+      "cross_sentence_splice_or_partial_match": 1
+    }
   },
   "flashlite_instability": {
     "n_passages": 20,
