@@ -1,0 +1,29 @@
+{
+  "flashlite_main": {
+    "n_quotes": 126,
+    "n_recovered_exact": 124,
+    "n_recovered_normalized_fallback": 1,
+    "n_unrecoverable": 1,
+    "recovery_rate": 0.9920634920634921,
+    "n_ambiguous_multi_occurrence": 0,
+    "ambiguous_rate_of_recovered": 0.0
+  },
+  "qwen_main": {
+    "n_quotes": 56,
+    "n_recovered_exact": 21,
+    "n_recovered_normalized_fallback": 12,
+    "n_unrecoverable": 23,
+    "recovery_rate": 0.5892857142857143,
+    "n_ambiguous_multi_occurrence": 0,
+    "ambiguous_rate_of_recovered": 0.0
+  },
+  "groq_main": {
+    "n_quotes": 99,
+    "n_recovered_exact": 97,
+    "n_recovered_normalized_fallback": 1,
+    "n_unrecoverable": 1,
+    "recovery_rate": 0.98989898989899,
+    "n_ambiguous_multi_occurrence": 1,
+    "ambiguous_rate_of_recovered": 0.01020408163265306
+  }
+}
