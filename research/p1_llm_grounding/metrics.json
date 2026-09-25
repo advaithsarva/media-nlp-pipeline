@@ -25,6 +25,19 @@
       "paraphrase_or_merged_span": 4
     }
   },
+  "groq_main": {
+    "n_responses": 50,
+    "n_parse_failed": 27,
+    "n_quotes": 99,
+    "verbatim_rate": 0.9797979797979798,
+    "normalized_rate": 0.98989898989899,
+    "offset_accuracy": 0.5555555555555556,
+    "offset_checkable_rate": 1.0,
+    "failure_taxonomy": {
+      "cross_sentence_splice_or_partial_match": 1,
+      "boundary_or_punctuation_drift": 1
+    }
+  },
   "flashlite_instability": {
     "n_passages": 20,
     "n_unstable": 12,
@@ -34,5 +47,10 @@
     "n_passages": 2,
     "n_unstable": 0,
     "instability_rate": 0.0
+  },
+  "groq_instability": {
+    "n_passages": 10,
+    "n_unstable": 5,
+    "instability_rate": 0.5
   }
 }

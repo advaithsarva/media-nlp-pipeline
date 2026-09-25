@@ -162,6 +162,7 @@ def main():
     for name, path in [
         ("flashlite_main", HERE / "raw_flashlite_main.jsonl"),
         ("qwen_main", HERE / "raw_qwen_main.jsonl"),
+        ("groq_main", HERE / "raw_groq_main.jsonl"),
     ]:
         r = score_run(path, corpus)
         if r:
@@ -172,6 +173,7 @@ def main():
     for name, path in [
         ("flashlite_instability", HERE / "raw_flashlite_instability.jsonl"),
         ("qwen_instability", HERE / "raw_qwen_instability.jsonl"),
+        ("groq_instability", HERE / "raw_groq_instability.jsonl"),
     ]:
         r = score_instability(path, corpus)
         if r:
