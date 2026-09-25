@@ -1,0 +1,911 @@
+{
+  "summary": {
+    "n_articles": 50,
+    "n_offset_alignment_mismatches": 0,
+    "micro_precision": 0.037037037037037035,
+    "micro_recall": 0.004366812227074236,
+    "mean_iou_over_matched_spans": 0.33362937710763796,
+    "total_predicted_spans": 81,
+    "total_gold_spans_mapped_categories": 687,
+    "mapped_categories": [
+      "appeal_to_fear",
+      "loaded_language",
+      "name_calling",
+      "repetition",
+      "thought_terminating_cliche",
+      "whataboutism"
+    ],
+    "excluded_categories_no_clean_map": [
+      "glittering_generalities",
+      "gaslighting",
+      "guilt_by_association",
+      "scapegoating"
+    ]
+  },
+  "per_article": [
+    {
+      "n_pred": 0,
+      "n_gold": 2,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": null,
+      "recall": 0.0,
+      "article_id": "741896049",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 1,
+      "gold_categories": [
+        "repetition"
+      ]
+    },
+    {
+      "n_pred": 4,
+      "n_gold": 7,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": 0.0,
+      "recall": 0.0,
+      "article_id": "732708002",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 3,
+      "gold_categories": [
+        "loaded_language",
+        "name_calling",
+        "repetition"
+      ]
+    },
+    {
+      "n_pred": 0,
+      "n_gold": 7,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": null,
+      "recall": 0.0,
+      "article_id": "729940206",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 4,
+      "gold_categories": [
+        "loaded_language",
+        "name_calling",
+        "repetition",
+        "thought_terminating_cliche"
+      ]
+    },
+    {
+      "n_pred": 0,
+      "n_gold": 25,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": null,
+      "recall": 0.0,
+      "article_id": "762546428",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 3,
+      "gold_categories": [
+        "loaded_language",
+        "name_calling",
+        "repetition"
+      ]
+    },
+    {
+      "n_pred": 0,
+      "n_gold": 35,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": null,
+      "recall": 0.0,
+      "article_id": "111111131",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 3,
+      "gold_categories": [
+        "loaded_language",
+        "name_calling",
+        "repetition"
+      ]
+    },
+    {
+      "n_pred": 0,
+      "n_gold": 19,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": null,
+      "recall": 0.0,
+      "article_id": "770156851",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 4,
+      "gold_categories": [
+        "loaded_language",
+        "name_calling",
+        "repetition",
+        "thought_terminating_cliche"
+      ]
+    },
+    {
+      "n_pred": 1,
+      "n_gold": 18,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": 0.0,
+      "recall": 0.0,
+      "article_id": "772947654",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 4,
+      "gold_categories": [
+        "loaded_language",
+        "name_calling",
+        "repetition",
+        "whataboutism"
+      ]
+    },
+    {
+      "n_pred": 0,
+      "n_gold": 12,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": null,
+      "recall": 0.0,
+      "article_id": "774637726",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 3,
+      "gold_categories": [
+        "loaded_language",
+        "name_calling",
+        "repetition"
+      ]
+    },
+    {
+      "n_pred": 0,
+      "n_gold": 2,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": null,
+      "recall": 0.0,
+      "article_id": "710376094",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 2,
+      "gold_categories": [
+        "loaded_language",
+        "repetition"
+      ]
+    },
+    {
+      "n_pred": 0,
+      "n_gold": 0,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": null,
+      "recall": null,
+      "article_id": "729700539",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 0,
+      "gold_categories": []
+    },
+    {
+      "n_pred": 1,
+      "n_gold": 20,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": 0.0,
+      "recall": 0.0,
+      "article_id": "774145019",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 2,
+      "gold_categories": [
+        "loaded_language",
+        "repetition"
+      ]
+    },
+    {
+      "n_pred": 0,
+      "n_gold": 24,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": null,
+      "recall": 0.0,
+      "article_id": "703698295",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 4,
+      "gold_categories": [
+        "appeal_to_fear",
+        "loaded_language",
+        "name_calling",
+        "repetition"
+      ]
+    },
+    {
+      "n_pred": 0,
+      "n_gold": 13,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": null,
+      "recall": 0.0,
+      "article_id": "788726416",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 3,
+      "gold_categories": [
+        "loaded_language",
+        "name_calling",
+        "repetition"
+      ]
+    },
+    {
+      "n_pred": 0,
+      "n_gold": 1,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": null,
+      "recall": 0.0,
+      "article_id": "727405181",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 1,
+      "gold_categories": [
+        "loaded_language"
+      ]
+    },
+    {
+      "n_pred": 0,
+      "n_gold": 3,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": null,
+      "recall": 0.0,
+      "article_id": "999000155",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 2,
+      "gold_categories": [
+        "loaded_language",
+        "thought_terminating_cliche"
+      ]
+    },
+    {
+      "n_pred": 0,
+      "n_gold": 0,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": null,
+      "recall": null,
+      "article_id": "762956953",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 0,
+      "gold_categories": []
+    },
+    {
+      "n_pred": 0,
+      "n_gold": 8,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": null,
+      "recall": 0.0,
+      "article_id": "723883127",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 3,
+      "gold_categories": [
+        "loaded_language",
+        "name_calling",
+        "repetition"
+      ]
+    },
+    {
+      "n_pred": 0,
+      "n_gold": 5,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": null,
+      "recall": 0.0,
+      "article_id": "755814432",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 2,
+      "gold_categories": [
+        "appeal_to_fear",
+        "loaded_language"
+      ]
+    },
+    {
+      "n_pred": 9,
+      "n_gold": 61,
+      "tp": 0,
+      "mean_iou": 0.24324324324324326,
+      "mean_boundary_err_start": 28.0,
+      "mean_boundary_err_end": 0.0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "article_id": "763260610",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 5,
+      "gold_categories": [
+        "appeal_to_fear",
+        "loaded_language",
+        "name_calling",
+        "repetition",
+        "whataboutism"
+      ]
+    },
+    {
+      "n_pred": 0,
+      "n_gold": 6,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": null,
+      "recall": 0.0,
+      "article_id": "762160164",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 3,
+      "gold_categories": [
+        "loaded_language",
+        "name_calling",
+        "repetition"
+      ]
+    },
+    {
+      "n_pred": 1,
+      "n_gold": 12,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": 0.0,
+      "recall": 0.0,
+      "article_id": "765029945",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 4,
+      "gold_categories": [
+        "appeal_to_fear",
+        "loaded_language",
+        "name_calling",
+        "repetition"
+      ]
+    },
+    {
+      "n_pred": 0,
+      "n_gold": 6,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": null,
+      "recall": 0.0,
+      "article_id": "730559808",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 4,
+      "gold_categories": [
+        "appeal_to_fear",
+        "loaded_language",
+        "repetition",
+        "thought_terminating_cliche"
+      ]
+    },
+    {
+      "n_pred": 0,
+      "n_gold": 1,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": null,
+      "recall": 0.0,
+      "article_id": "795689901",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 1,
+      "gold_categories": [
+        "loaded_language"
+      ]
+    },
+    {
+      "n_pred": 17,
+      "n_gold": 4,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": 0.0,
+      "recall": 0.0,
+      "article_id": "721710340",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 2,
+      "gold_categories": [
+        "name_calling",
+        "repetition"
+      ]
+    },
+    {
+      "n_pred": 0,
+      "n_gold": 2,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": null,
+      "recall": 0.0,
+      "article_id": "999001241",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 2,
+      "gold_categories": [
+        "loaded_language",
+        "repetition"
+      ]
+    },
+    {
+      "n_pred": 1,
+      "n_gold": 14,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": 0.0,
+      "recall": 0.0,
+      "article_id": "699142854",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 4,
+      "gold_categories": [
+        "appeal_to_fear",
+        "loaded_language",
+        "name_calling",
+        "repetition"
+      ]
+    },
+    {
+      "n_pred": 0,
+      "n_gold": 0,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": null,
+      "recall": null,
+      "article_id": "718312499",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 0,
+      "gold_categories": []
+    },
+    {
+      "n_pred": 0,
+      "n_gold": 9,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": null,
+      "recall": 0.0,
+      "article_id": "706600938",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 3,
+      "gold_categories": [
+        "loaded_language",
+        "name_calling",
+        "thought_terminating_cliche"
+      ]
+    },
+    {
+      "n_pred": 4,
+      "n_gold": 28,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": 0.0,
+      "recall": 0.0,
+      "article_id": "759468687",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 5,
+      "gold_categories": [
+        "appeal_to_fear",
+        "loaded_language",
+        "name_calling",
+        "repetition",
+        "whataboutism"
+      ]
+    },
+    {
+      "n_pred": 0,
+      "n_gold": 13,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": null,
+      "recall": 0.0,
+      "article_id": "761969692",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 2,
+      "gold_categories": [
+        "loaded_language",
+        "name_calling"
+      ]
+    },
+    {
+      "n_pred": 1,
+      "n_gold": 46,
+      "tp": 1,
+      "mean_iou": 0.42857142857142855,
+      "mean_boundary_err_start": 2.0,
+      "mean_boundary_err_end": 10.0,
+      "precision": 1.0,
+      "recall": 0.021739130434782608,
+      "article_id": "789615291",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 3,
+      "gold_categories": [
+        "loaded_language",
+        "name_calling",
+        "repetition"
+      ]
+    },
+    {
+      "n_pred": 0,
+      "n_gold": 1,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": null,
+      "recall": 0.0,
+      "article_id": "701933838",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 1,
+      "gold_categories": [
+        "appeal_to_fear"
+      ]
+    },
+    {
+      "n_pred": 0,
+      "n_gold": 3,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": null,
+      "recall": 0.0,
+      "article_id": "702077783",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 2,
+      "gold_categories": [
+        "loaded_language",
+        "name_calling"
+      ]
+    },
+    {
+      "n_pred": 0,
+      "n_gold": 7,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": null,
+      "recall": 0.0,
+      "article_id": "708561738",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 3,
+      "gold_categories": [
+        "appeal_to_fear",
+        "loaded_language",
+        "name_calling"
+      ]
+    },
+    {
+      "n_pred": 4,
+      "n_gold": 69,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": 0.0,
+      "recall": 0.0,
+      "article_id": "738207834",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 5,
+      "gold_categories": [
+        "appeal_to_fear",
+        "loaded_language",
+        "name_calling",
+        "repetition",
+        "thought_terminating_cliche"
+      ]
+    },
+    {
+      "n_pred": 12,
+      "n_gold": 8,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": 0.0,
+      "recall": 0.0,
+      "article_id": "762147609",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 4,
+      "gold_categories": [
+        "appeal_to_fear",
+        "loaded_language",
+        "name_calling",
+        "repetition"
+      ]
+    },
+    {
+      "n_pred": 0,
+      "n_gold": 30,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": null,
+      "recall": 0.0,
+      "article_id": "999001032",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 5,
+      "gold_categories": [
+        "appeal_to_fear",
+        "loaded_language",
+        "name_calling",
+        "repetition",
+        "thought_terminating_cliche"
+      ]
+    },
+    {
+      "n_pred": 3,
+      "n_gold": 15,
+      "tp": 1,
+      "mean_iou": 0.43478260869565216,
+      "mean_boundary_err_start": 0.0,
+      "mean_boundary_err_end": 13.0,
+      "precision": 0.3333333333333333,
+      "recall": 0.06666666666666667,
+      "article_id": "698503276",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 4,
+      "gold_categories": [
+        "appeal_to_fear",
+        "loaded_language",
+        "repetition",
+        "whataboutism"
+      ]
+    },
+    {
+      "n_pred": 6,
+      "n_gold": 56,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": 0.0,
+      "recall": 0.0,
+      "article_id": "778664280",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 4,
+      "gold_categories": [
+        "appeal_to_fear",
+        "loaded_language",
+        "name_calling",
+        "thought_terminating_cliche"
+      ]
+    },
+    {
+      "n_pred": 0,
+      "n_gold": 4,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": null,
+      "recall": 0.0,
+      "article_id": "724095467",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 1,
+      "gold_categories": [
+        "loaded_language"
+      ]
+    },
+    {
+      "n_pred": 0,
+      "n_gold": 2,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": null,
+      "recall": 0.0,
+      "article_id": "723793978",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 2,
+      "gold_categories": [
+        "repetition",
+        "thought_terminating_cliche"
+      ]
+    },
+    {
+      "n_pred": 0,
+      "n_gold": 8,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": null,
+      "recall": 0.0,
+      "article_id": "701553469",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 3,
+      "gold_categories": [
+        "appeal_to_fear",
+        "loaded_language",
+        "name_calling"
+      ]
+    },
+    {
+      "n_pred": 0,
+      "n_gold": 1,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": null,
+      "recall": 0.0,
+      "article_id": "758472954",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 1,
+      "gold_categories": [
+        "appeal_to_fear"
+      ]
+    },
+    {
+      "n_pred": 7,
+      "n_gold": 49,
+      "tp": 1,
+      "mean_iou": 0.22792022792022792,
+      "mean_boundary_err_start": 16.0,
+      "mean_boundary_err_end": 0.0,
+      "precision": 0.14285714285714285,
+      "recall": 0.02040816326530612,
+      "article_id": "729578579",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 5,
+      "gold_categories": [
+        "appeal_to_fear",
+        "loaded_language",
+        "name_calling",
+        "repetition",
+        "thought_terminating_cliche"
+      ]
+    },
+    {
+      "n_pred": 1,
+      "n_gold": 12,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": 0.0,
+      "recall": 0.0,
+      "article_id": "789121265",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 4,
+      "gold_categories": [
+        "loaded_language",
+        "name_calling",
+        "repetition",
+        "whataboutism"
+      ]
+    },
+    {
+      "n_pred": 0,
+      "n_gold": 7,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": null,
+      "recall": 0.0,
+      "article_id": "765953146",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 2,
+      "gold_categories": [
+        "loaded_language",
+        "repetition"
+      ]
+    },
+    {
+      "n_pred": 0,
+      "n_gold": 2,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": null,
+      "recall": 0.0,
+      "article_id": "730222442",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 2,
+      "gold_categories": [
+        "loaded_language",
+        "repetition"
+      ]
+    },
+    {
+      "n_pred": 5,
+      "n_gold": 5,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": 0.0,
+      "recall": 0.0,
+      "article_id": "741655444",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 4,
+      "gold_categories": [
+        "appeal_to_fear",
+        "loaded_language",
+        "name_calling",
+        "repetition"
+      ]
+    },
+    {
+      "n_pred": 0,
+      "n_gold": 4,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": null,
+      "recall": 0.0,
+      "article_id": "757243988",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 2,
+      "gold_categories": [
+        "loaded_language",
+        "repetition"
+      ]
+    },
+    {
+      "n_pred": 4,
+      "n_gold": 1,
+      "tp": 0,
+      "mean_iou": null,
+      "mean_boundary_err_start": null,
+      "mean_boundary_err_end": null,
+      "precision": 0.0,
+      "recall": 0.0,
+      "article_id": "704856340",
+      "offsets_aligned_sample_check": true,
+      "n_gold_categories_present": 1,
+      "gold_categories": [
+        "loaded_language"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,188 @@
+{
+  "summary": {
+    "n_articles_total": 371,
+    "n_articles_multi_category": 25,
+    "n_articles_nonzero_gap": 25,
+    "mean_gap_noisy_or_minus_smooth_max": 0.1801275975942957,
+    "max_gap": 0.30215434171504274,
+    "min_gap": 0.09142689582928716,
+    "gap_always_positive": true
+  },
+  "multi_category_articles": [
+    {
+      "article_id": "111111135",
+      "n_propaganda_categories_present": 2,
+      "noisy_or": 0.5620035029975083,
+      "smooth_max": 0.3861140241121849,
+      "gap": 0.17588947888532347
+    },
+    {
+      "article_id": "694327499",
+      "n_propaganda_categories_present": 2,
+      "noisy_or": 0.20983510156158236,
+      "smooth_max": 0.11257412416622245,
+      "gap": 0.09726097739535991
+    },
+    {
+      "article_id": "697454736",
+      "n_propaganda_categories_present": 2,
+      "noisy_or": 0.7598668945756626,
+      "smooth_max": 0.5858165912068243,
+      "gap": 0.1740503033688383
+    },
+    {
+      "article_id": "701837665",
+      "n_propaganda_categories_present": 3,
+      "noisy_or": 0.6914326340117674,
+      "smooth_max": 0.39908969816679146,
+      "gap": 0.2923429358449759
+    },
+    {
+      "article_id": "703821117",
+      "n_propaganda_categories_present": 3,
+      "noisy_or": 0.6009425446419824,
+      "smooth_max": 0.3232886750797164,
+      "gap": 0.27765386956226595
+    },
+    {
+      "article_id": "715588833",
+      "n_propaganda_categories_present": 2,
+      "noisy_or": 0.19612982802370693,
+      "smooth_max": 0.10470293219441977,
+      "gap": 0.09142689582928716
+    },
+    {
+      "article_id": "721406153",
+      "n_propaganda_categories_present": 2,
+      "noisy_or": 0.39650561706831955,
+      "smooth_max": 0.24003397985999936,
+      "gap": 0.1564716372083202
+    },
+    {
+      "article_id": "725498022",
+      "n_propaganda_categories_present": 2,
+      "noisy_or": 0.348913205932886,
+      "smooth_max": 0.1931384932415003,
+      "gap": 0.1557747126913857
+    },
+    {
+      "article_id": "729578579",
+      "n_propaganda_categories_present": 3,
+      "noisy_or": 0.2873121550303238,
+      "smooth_max": 0.11052204152016055,
+      "gap": 0.17679011351016327
+    },
+    {
+      "article_id": "729668796",
+      "n_propaganda_categories_present": 2,
+      "noisy_or": 0.665304617347076,
+      "smooth_max": 0.4780366342657277,
+      "gap": 0.18726798308134834
+    },
+    {
+      "article_id": "758386255",
+      "n_propaganda_categories_present": 2,
+      "noisy_or": 0.5291247777679088,
+      "smooth_max": 0.3707512233389961,
+      "gap": 0.15837355442891266
+    },
+    {
+      "article_id": "761334950",
+      "n_propaganda_categories_present": 2,
+      "noisy_or": 0.5280275788163171,
+      "smooth_max": 0.36610433886795457,
+      "gap": 0.16192323994836255
+    },
+    {
+      "article_id": "762340819",
+      "n_propaganda_categories_present": 3,
+      "noisy_or": 0.5516141751385848,
+      "smooth_max": 0.24945983342354203,
+      "gap": 0.30215434171504274
+    },
+    {
+      "article_id": "763260610",
+      "n_propaganda_categories_present": 3,
+      "noisy_or": 0.4467817990230374,
+      "smooth_max": 0.18633804540356785,
+      "gap": 0.26044375361946953
+    },
+    {
+      "article_id": "764664283",
+      "n_propaganda_categories_present": 2,
+      "noisy_or": 0.35251565281954733,
+      "smooth_max": 0.21000487079728852,
+      "gap": 0.1425107820222588
+    },
+    {
+      "article_id": "769427494",
+      "n_propaganda_categories_present": 2,
+      "noisy_or": 0.33235005759911596,
+      "smooth_max": 0.19527478564161602,
+      "gap": 0.13707527195749994
+    },
+    {
+      "article_id": "773937361",
+      "n_propaganda_categories_present": 2,
+      "noisy_or": 0.3095765846056827,
+      "smooth_max": 0.17441045925770254,
+      "gap": 0.13516612534798017
+    },
+    {
+      "article_id": "778664280",
+      "n_propaganda_categories_present": 2,
+      "noisy_or": 0.3490651999039549,
+      "smooth_max": 0.1970405343976978,
+      "gap": 0.1520246655062571
+    },
+    {
+      "article_id": "780414700",
+      "n_propaganda_categories_present": 2,
+      "noisy_or": 0.6179070540023497,
+      "smooth_max": 0.3819492804231202,
+      "gap": 0.23595777357922948
+    },
+    {
+      "article_id": "781768042",
+      "n_propaganda_categories_present": 2,
+      "noisy_or": 0.7572908338582167,
+      "smooth_max": 0.5825883646566871,
+      "gap": 0.17470246920152965
+    },
+    {
+      "article_id": "782086447",
+      "n_propaganda_categories_present": 2,
+      "noisy_or": 0.7691969198411689,
+      "smooth_max": 0.5862067175605623,
+      "gap": 0.18299020228060658
+    },
+    {
+      "article_id": "783702663",
+      "n_propaganda_categories_present": 3,
+      "noisy_or": 0.2329468240940008,
+      "smooth_max": 0.08608862500435496,
+      "gap": 0.14685819908964584
+    },
+    {
+      "article_id": "787529309",
+      "n_propaganda_categories_present": 2,
+      "noisy_or": 0.592107265552866,
+      "smooth_max": 0.39606232239454126,
+      "gap": 0.1960449431583247
+    },
+    {
+      "article_id": "787668628",
+      "n_propaganda_categories_present": 2,
+      "noisy_or": 0.38987740578086105,
+      "smooth_max": 0.23529752869464587,
+      "gap": 0.15457987708621518
+    },
+    {
+      "article_id": "999000870",
+      "n_propaganda_categories_present": 2,
+      "noisy_or": 0.5034331695297287,
+      "smooth_max": 0.32597733599093925,
+      "gap": 0.17745583353878946
+    }
+  ]
+}
