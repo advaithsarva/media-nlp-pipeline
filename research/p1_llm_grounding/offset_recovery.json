@@ -25,5 +25,14 @@
     "recovery_rate": 0.98989898989899,
     "n_ambiguous_multi_occurrence": 1,
     "ambiguous_rate_of_recovered": 0.01020408163265306
+  },
+  "groq20b_main": {
+    "n_quotes": 32,
+    "n_recovered_exact": 32,
+    "n_recovered_normalized_fallback": 0,
+    "n_unrecoverable": 0,
+    "recovery_rate": 1.0,
+    "n_ambiguous_multi_occurrence": 0,
+    "ambiguous_rate_of_recovered": 0.0
   }
 }

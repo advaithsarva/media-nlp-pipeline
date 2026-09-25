@@ -102,6 +102,7 @@ def main():
         ("flashlite_main", HERE / "raw_flashlite_main.jsonl"),
         ("qwen_main", HERE / "raw_qwen_main.jsonl"),
         ("groq_main", HERE / "raw_groq_main.jsonl"),
+        ("groq20b_main", HERE / "raw_groq20b_main.jsonl"),
     ]:
         r = score_recovery(path, corpus)
         if r:

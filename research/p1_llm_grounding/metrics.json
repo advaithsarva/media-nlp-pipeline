@@ -38,6 +38,16 @@
       "boundary_or_punctuation_drift": 1
     }
   },
+  "groq20b_main": {
+    "n_responses": 50,
+    "n_parse_failed": 41,
+    "n_quotes": 32,
+    "verbatim_rate": 1.0,
+    "normalized_rate": 1.0,
+    "offset_accuracy": 0.03225806451612903,
+    "offset_checkable_rate": 0.96875,
+    "failure_taxonomy": {}
+  },
   "flashlite_instability": {
     "n_passages": 20,
     "n_unstable": 12,
@@ -52,5 +62,10 @@
     "n_passages": 10,
     "n_unstable": 5,
     "instability_rate": 0.5
+  },
+  "groq20b_instability": {
+    "n_passages": 1,
+    "n_unstable": 0,
+    "instability_rate": 0.0
   }
 }

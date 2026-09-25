@@ -50,9 +50,9 @@ API_KEY = _get_api_key()
 
 
 def call_groq(prompt: str, temperature: float = 0.0, max_tokens: int = 5000, max_retries: int = 5,
-              reasoning_effort: str = "medium"):
+              reasoning_effort: str = "medium", model: str = MODEL):
     body = json.dumps({
-        "model": MODEL,
+        "model": model,
         "messages": [{"role": "user", "content": prompt}],
         "temperature": temperature,
         "max_tokens": max_tokens,
